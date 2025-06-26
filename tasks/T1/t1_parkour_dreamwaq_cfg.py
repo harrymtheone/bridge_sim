@@ -1,13 +1,12 @@
 import math
+
 from isaaclab.envs import ManagerBasedRLEnvCfg
-from isaaclab.managers import SceneEntityCfg, RewardTermCfg, TerminationTermCfg, EventTermCfg
+from isaaclab.managers import SceneEntityCfg, ObservationGroupCfg, ObservationTermCfg, RewardTermCfg, TerminationTermCfg, EventTermCfg
 from isaaclab.utils import configclass
 
 from bridge_env import mdp
-from bridge_rl.algorithms.dreamwaq import DreamwaqObservationsCfg
+from bridge_rl.algorithms.dreamwaq import DreamWaQObservationsCfg
 from .t1_parkour_cfg import T1SceneCfg, ActionsCfg
-
-
 
 
 @configclass
@@ -126,8 +125,6 @@ class EventCfg:
 
 @configclass
 class CommandsCfg:
-    """Command specifications for the MDP."""
-
     base_velocity = mdp.UniformVelocityCommandCfg(
         asset_name="robot",
         resampling_time_range=(10.0, 10.0),
@@ -147,9 +144,9 @@ class T1ParkourDreamwaqCfg(ManagerBasedRLEnvCfg):
     episode_length_s = 40.0
     decimation = 4
 
-    scene = T1SceneCfg(num_envs=4, env_spacing=2.0)
+    scene = T1SceneCfg(num_envs=1024, env_spacing=2.0)
 
-    observations = DreamwaqObservationsCfg()
+    observations = DreamWaQObservationsCfg()
 
     actions = ActionsCfg()
 

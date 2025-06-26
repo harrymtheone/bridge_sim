@@ -1,43 +1,48 @@
-def launch_app():
+def get_arg_parser():
     import argparse
+    parser = argparse.ArgumentParser(description="BridgeDP IsaacSim RL framework")
 
+    parser.add_argument("--proj_name", type=str, required=True)
+    parser.add_argument("--task", type=str, required=True)
+    parser.add_argument("--exptid", type=str, required=True)
+    parser.add_argument("--resumeid", type=str)
+    parser.add_argument("--checkpoint", type=str)
+
+    parser.add_argument("--debug", action="store_true")
+    return parser
+
+
+def launch_app():
     from isaaclab.app import AppLauncher
 
-    parser = argparse.ArgumentParser(description="BridgeDP IsaacSim RL framework")
-    parser.add_argument("--debug", action="store_true")
-
+    parser = get_arg_parser()
     AppLauncher.add_app_launcher_args(parser)
 
-    args_cli = parser.parse_args()
-    app_launcher = AppLauncher(args_cli)
-    simulation_app = app_launcher.app
+    args = parser.parse_args()
+    app_launcher = AppLauncher(args)
+    sim_app = app_launcher.app
+    return args, sim_app
 
-    return args_cli, simulation_app
 
-
-def main():
-    import torch
-
-    from isaaclab.envs import ManagerBasedRLEnv
+def main(args):
+    from bridge_rl.runners import RLRunner, RLRunnerCfg
+    from bridge_rl.algorithms.dreamwaq import DreamWaQCfg
     from tasks.T1 import T1ParkourDreamwaqCfg
+    from isaaclab.envs import ManagerBasedRLEnv
 
-    env = ManagerBasedRLEnv(cfg=T1ParkourDreamwaqCfg())
+    runner = RLRunner(
+        cfg=RLRunnerCfg(
+            algorithm_cfg=DreamWaQCfg(),
+            max_iterations=1000,
+        ),
+        env=ManagerBasedRLEnv(cfg=T1ParkourDreamwaqCfg()),
+        device=args.device
+    )
 
-    env.reset()
-    print("[INFO]: Setup complete...")
-    # Run the simulator
-
-    # Define simulation stepping
-    count = 0
-    # Simulation loop
-    while simulation_app.is_running():
-        # Perform step
-        env.step(torch.zeros(env.num_envs, env.action_manager.total_action_dim, device=env.device))
-        # Increment counter
-        count += 1
+    runner.learn()
 
 
 if __name__ == '__main__':
     args_cli, simulation_app = launch_app()
-    main()
+    main(args_cli)
     simulation_app.close()

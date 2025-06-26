@@ -1,1 +1,2 @@
-from .dreamwaq_cfg import DreamwaqObservationsCfg
+from .dreamwaq import DreamWaQ
+from .dreamwaq_cfg import DreamWaQCfg, DreamWaQObservationsCfg

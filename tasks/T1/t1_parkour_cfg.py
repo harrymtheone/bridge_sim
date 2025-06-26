@@ -2,7 +2,8 @@ import isaaclab.sim as sim_utils
 from isaaclab.actuators import ImplicitActuatorCfg
 from isaaclab.assets import AssetBaseCfg, ArticulationCfg
 from isaaclab.scene import InteractiveSceneCfg
-from isaaclab.sensors import ContactSensorCfg
+from isaaclab.sensors import ContactSensorCfg, RayCasterCfg
+from isaaclab.sensors.ray_caster.patterns.patterns_cfg import GridPatternCfg
 from isaaclab.sim import UsdFileCfg, RigidBodyPropertiesCfg, ArticulationRootPropertiesCfg
 from isaaclab.utils import configclass
 
@@ -128,8 +129,20 @@ class T1SceneCfg(InteractiveSceneCfg):
 
     # sensors
     contact_forces = ContactSensorCfg(
-        # prim_path="{ENV_REGEX_NS}/Robot/.*foot_link", update_period=0.0, history_length=0, debug_vis=True
         prim_path="{ENV_REGEX_NS}/Robot/.*", update_period=0.0, history_length=0, debug_vis=True
+    )
+
+    height_scanner = RayCasterCfg(
+        mesh_prim_paths=["/World/defaultGroundPlane"],
+        attach_yaw_only=True,
+        pattern_cfg=GridPatternCfg(
+            resolution=0.05,
+            size=(1.8, 3.2),
+        ),
+        prim_path="{ENV_REGEX_NS}/Robot/Trunk",
+        update_period=0.0,
+        history_length=0,
+        debug_vis=True,
     )
 
 
