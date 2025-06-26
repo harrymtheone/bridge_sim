@@ -11,8 +11,6 @@ from .phase_command import PhaseCommand
 class PhaseCommandCfg(CommandTermCfg):
     class_type: type = PhaseCommand
 
-    asset_name: str = MISSING
-
     base_command_cfg: CommandTermCfg = MISSING
 
     num_phase_clock: int = MISSING
@@ -24,6 +22,8 @@ class PhaseCommandCfg(CommandTermCfg):
     randomize_start_phase: bool = MISSING
 
     stand_walk_switch: bool = MISSING
+
+    resampling_time_range: tuple[float, float] = (0, 0)
 
     def __post_init__(self):
         assert self.num_phase_clock == len(self.phase_bias)
