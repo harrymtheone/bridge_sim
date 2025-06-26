@@ -1,4 +1,5 @@
 import math
+from dataclasses import MISSING
 
 import isaaclab.sim as sim_utils
 from isaaclab.actuators import ImplicitActuatorCfg
@@ -12,7 +13,7 @@ from isaaclab.sim import UsdFileCfg, RigidBodyPropertiesCfg, ArticulationRootPro
 from isaaclab.utils import configclass
 
 from bridge_env import mdp
-from bridge_rl.algorithms.dreamwaq import DreamWaQObservationsCfg
+from bridge_rl.algorithms.dreamwaq import DreamWaQCfg
 
 
 @configclass
@@ -300,8 +301,6 @@ class T1ParkourDreamwaqCfg(ManagerBasedRLEnvCfg):
     decimation = 4
 
     scene = T1SceneCfg(num_envs=16, env_spacing=2.0)
-
-    observations = DreamWaQObservationsCfg()
 
     actions = ActionsCfg()
 

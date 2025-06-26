@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import MISSING
 from typing import TYPE_CHECKING
 
+from isaaclab.envs import ManagerBasedRLEnvCfg
 from isaaclab.utils import configclass
 
 if TYPE_CHECKING:
@@ -11,6 +12,8 @@ if TYPE_CHECKING:
 
 @configclass
 class RLRunnerCfg:
+    task_cfg: ManagerBasedRLEnvCfg = MISSING
+
     algorithm_cfg: PPOCfg = MISSING
 
     max_iterations: int = MISSING
@@ -20,3 +23,6 @@ class RLRunnerCfg:
     save_interval: int = 100
 
     logger_backend: str = "tensorboard"
+
+    def __post_init__(self):
+        self.task_cfg.observations = self.algorithm_cfg.observation_cfg

@@ -10,21 +10,21 @@ from isaaclab.envs import ManagerBasedRLEnv
 from torch.utils.tensorboard import SummaryWriter
 
 if TYPE_CHECKING:
-    from bridge_rl.runners.rl_runner import RLRunnerCfg
+    from . import RLRunnerCfg
 
 
 class RLRunner:
-    def __init__(self, cfg: RLRunnerCfg, env: ManagerBasedRLEnv, args: Namespace):
+    def __init__(self, cfg: RLRunnerCfg, args: Namespace):
         cfg.validate()
-
         self.cfg = cfg
-        self.env = env
+
+        self.env = ManagerBasedRLEnv(cfg=cfg.task_cfg)
         self.device = args.device
 
         self._prepare_log_dir(args)
 
         # Create algorithm
-        self.algorithm = cfg.algorithm_cfg.class_type(self.cfg.algorithm_cfg, env=env)
+        self.algorithm = cfg.algorithm_cfg.class_type(cfg.algorithm_cfg, env=self.env)
 
         self.start_it = 0
         self.cur_it = 0
@@ -54,7 +54,8 @@ class RLRunner:
             self.save(os.path.join(self.model_dir, 'latest.pt'))
 
     def _prepare_log_dir(self, args):
-        alg_dir = os.path.join(args.log_root, args.proj_name, self.cfg.algorithm_cfg.class_type.__name__)
+        algorithm_name = self.cfg.algorithm_cfg.class_type.__name__
+        alg_dir = os.path.join(args.log_root, args.proj_name, algorithm_name)
         self.model_dir = os.path.join(alg_dir, args.exptid)
         os.makedirs(self.model_dir, exist_ok=True)
 

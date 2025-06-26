@@ -27,16 +27,15 @@ def launch_app():
 
 def main(args):
     from bridge_rl.runners import RLRunner, RLRunnerCfg
-    from bridge_rl.algorithms.dreamwaq import DreamWaQCfg
     from tasks.T1 import T1ParkourDreamwaqCfg
-    from isaaclab.envs import ManagerBasedRLEnv
+    from bridge_rl.algorithms.dreamwaq import DreamWaQCfg
 
     runner = RLRunner(
         cfg=RLRunnerCfg(
+            task_cfg=T1ParkourDreamwaqCfg(),
             algorithm_cfg=DreamWaQCfg(),
             max_iterations=1000,
         ),
-        env=ManagerBasedRLEnv(cfg=T1ParkourDreamwaqCfg()),
         args=args,
     )
 
