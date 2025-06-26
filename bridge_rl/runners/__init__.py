@@ -1,2 +1,3 @@
-from bridge_rl.runners.rl_runner import RLRunnerCfg, RLRunner
+from .rl_runner import RLRunner
 
+from .rl_runner_cfg import RLRunnerCfg

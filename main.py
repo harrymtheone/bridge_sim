@@ -2,13 +2,14 @@ def get_arg_parser():
     import argparse
     parser = argparse.ArgumentParser(description="BridgeDP IsaacSim RL framework")
 
-    parser.add_argument("--proj_name", type=str, required=True)
-    parser.add_argument("--task", type=str, required=True)
-    parser.add_argument("--exptid", type=str, required=True)
-    parser.add_argument("--resumeid", type=str)
-    parser.add_argument("--checkpoint", type=str)
+    parser.add_argument('--proj_name', type=str, required=True)
+    parser.add_argument('--task', type=str, required=True)
+    parser.add_argument('--exptid', type=str, required=True)
+    parser.add_argument('--resumeid', type=str)
+    parser.add_argument('--checkpoint', type=str)
 
-    parser.add_argument("--debug", action="store_true")
+    parser.add_argument('--log_root', type=str, default='logs')
+    parser.add_argument('--debug', action='store_true')
     return parser
 
 
@@ -36,7 +37,7 @@ def main(args):
             max_iterations=1000,
         ),
         env=ManagerBasedRLEnv(cfg=T1ParkourDreamwaqCfg()),
-        device=args.device
+        args=args,
     )
 
     runner.learn()
