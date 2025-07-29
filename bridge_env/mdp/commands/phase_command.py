@@ -57,6 +57,13 @@ class PhaseCommand(CommandTerm):
         assert hasattr(self.base_command, "is_standing_env"), "base command must have is_standing_env attribute"
         return self.base_command.is_standing_env
 
+    @property
+    def stance_mask(self) -> torch.Tensor:
+        return self.get_clocks() >= 0 | self.is_standing_env[:, None]
+
+    def get_clocks(self) -> torch.Tensor:
+        return torch.sin(2 * torch.pi * (self.phase[:, None] + self.phase_bias))
+
     def _update_metrics(self):
         self.base_command._update_metrics()
 
@@ -74,11 +81,13 @@ class PhaseCommand(CommandTerm):
         self.phase_length_buf[:] += self.env.step_dt
         self.phase[:] = (self.phase_length_buf / self.period_s + self.start_phase) % 1.0
 
+        self.phase_cmd[:] = self.get_clocks()
+
         if self.cfg.stand_walk_switch:
             self.phase_cmd[:] *= ~self.is_standing_env.unsqueeze(-1)
 
     def _set_debug_vis_impl(self, debug_vis: bool):
-        self.base_command._set_debug_vis_impl(debug_vis)
+        return self.base_command._set_debug_vis_impl(debug_vis)
 
     def _debug_vis_callback(self, event):
-        self.base_command._debug_vis_callback(event)
+        return self.base_command._debug_vis_callback(event)

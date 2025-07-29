@@ -103,9 +103,14 @@ class RLRunner:
                 self.logger.add_scalar(t, v, global_step=self.cur_it)
             self.logger.flush()
 
-    def play_act(self, obs, **kwargs):
-        self.algorithm.actor.eval()
-        return self.algorithm.play_act(obs, **kwargs)
+    def play(self):
+        self.algorithm.eval()
+
+        observations, infos = self.env.reset()
+        with torch.inference_mode():
+            while True:
+                rtn = self.algorithm.play_act(observations)
+                observations, rewards, terminated, timeouts, infos = self.env.step(rtn['actions'])
 
     def load(self, path, load_optimizer=True):
         print("*" * 80)

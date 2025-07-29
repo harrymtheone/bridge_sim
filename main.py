@@ -27,12 +27,12 @@ def launch_app():
 
 def main(args):
     from bridge_rl.runners import RLRunner, RLRunnerCfg
-    from tasks.T1 import T1ParkourDreamwaqCfg
+    from tasks.T1 import T1FlatCfg
     from bridge_rl.algorithms.dreamwaq import DreamWaQCfg
 
     runner = RLRunner(
         cfg=RLRunnerCfg(
-            task_cfg=T1ParkourDreamwaqCfg(),
+            task_cfg=T1FlatCfg(),
             algorithm_cfg=DreamWaQCfg(),
             max_iterations=1000,
         ),

@@ -1,7 +1,7 @@
 from isaaclab.envs import mdp
 from isaaclab.managers import ObservationGroupCfg, ObservationTermCfg, SceneEntityCfg
 from isaaclab.utils import configclass
-from isaaclab.utils.noise import AdditiveUniformNoiseCfg
+from isaaclab.utils.noise import UniformNoiseCfg
 
 from bridge_rl.algorithms.ppo import PPOCfg
 from . import DreamWaQ
@@ -11,15 +11,15 @@ from . import DreamWaQ
 class DreamWaQObservationsCfg:
     @configclass
     class Proprio(ObservationGroupCfg):
-        base_ang_vel = ObservationTermCfg(func=mdp.base_ang_vel, noise=AdditiveUniformNoiseCfg(n_min=-0.2, n_max=0.2))
+        base_ang_vel = ObservationTermCfg(func=mdp.base_ang_vel, noise=UniformNoiseCfg(n_min=-0.2, n_max=0.2))
 
-        projected_gravity = ObservationTermCfg(func=mdp.projected_gravity, noise=AdditiveUniformNoiseCfg(n_min=-0.05, n_max=0.05))
+        projected_gravity = ObservationTermCfg(func=mdp.projected_gravity, noise=UniformNoiseCfg(n_min=-0.05, n_max=0.05))
 
         commands = ObservationTermCfg(func=mdp.generated_commands, params={"command_name": "base_velocity"})
 
-        joint_pos = ObservationTermCfg(func=mdp.joint_pos_rel, noise=AdditiveUniformNoiseCfg(n_min=-0.01, n_max=0.01))
+        joint_pos = ObservationTermCfg(func=mdp.joint_pos_rel, noise=UniformNoiseCfg(n_min=-0.01, n_max=0.01))
 
-        joint_vel = ObservationTermCfg(func=mdp.joint_vel_rel, noise=AdditiveUniformNoiseCfg(n_min=-1.5, n_max=1.5))
+        joint_vel = ObservationTermCfg(func=mdp.joint_vel_rel, noise=UniformNoiseCfg(n_min=-1.5, n_max=1.5))
 
         last_action = ObservationTermCfg(func=mdp.last_action)
 

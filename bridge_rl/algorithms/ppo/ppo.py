@@ -202,14 +202,17 @@ class PPO:
         Returns:
             Dictionary containing actions
         """
-        return {"actions": self.actor.act(obs, **kwargs)}
+        raise NotImplementedError
 
     def train(self):
         """Set networks to training mode."""
-        if self.actor is not None:
-            self.actor.train()
-        if self.critic is not None:
-            self.critic.train()
+        self.actor.train()
+        self.critic.train()
+
+    def eval(self):
+        """Set networks to evaluation mode."""
+        self.actor.eval()
+        self.critic.eval()
 
     def load(self, loaded_dict: Dict[str, Any], load_optimizer: bool = True) -> Any:
         """Load model state from checkpoint.

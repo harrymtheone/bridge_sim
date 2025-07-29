@@ -1,1 +1,1 @@
-from .t1_parkour_dreamwaq_cfg import T1ParkourDreamwaqCfg
+from .t1_flat_cfg import T1FlatCfg
