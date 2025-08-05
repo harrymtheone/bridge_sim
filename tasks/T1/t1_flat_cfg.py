@@ -24,7 +24,7 @@ class T1ArticulationCfg(ArticulationCfg):
     spawn = UsdFileCfg(
         usd_path='/home/harry/projects/bridge_sim_v2/robots/T1/legs/t1.usd',
         rigid_props=RigidBodyPropertiesCfg(
-            disable_gravity=False,
+            disable_gravity=True,
             linear_damping=0.,
             angular_damping=0.,
             max_linear_velocity=1000.,
@@ -143,7 +143,7 @@ class T1SceneCfg(InteractiveSceneCfg):
 
     height_scanner = RayCasterCfg(
         mesh_prim_paths=["/World/defaultGroundPlane"],
-        attach_yaw_only=True,
+        ray_alignment="yaw",
         pattern_cfg=GridPatternCfg(
             resolution=0.05,
             size=(1.8, 3.2),
@@ -162,6 +162,25 @@ class ActionsCfg:
 
 @configclass
 class RewardsCfg:
+    # ######### gait #########
+    track_ref_joint_pos = RewardTermCfg(
+        func=mdp.track_ref_dof_pos_T1,
+        weight=2.0,
+        params=dict(
+            command_name='base_velocity',
+            ref_motion_scale=0.3,
+        )
+    )
+
+    contact_accordance = RewardTermCfg(
+        func=mdp.feet_contact_accordance,
+        weight=1.2,
+        params=dict(
+            command_name='base_velocity',
+            contact_sensor_cfg=SceneEntityCfg("contact_forces", body_names=".*foot.*"),
+        )
+    )
+
     # ######### task #########
     track_lin_vel_exp = RewardTermCfg(
         func=mdp.track_lin_vel_xy_exp,
@@ -329,6 +348,8 @@ class CommandsCfg:
         phase_bias=[0, math.pi / 2],
         randomize_start_phase=True,
         stand_walk_switch=True,
+        air_ratio=0.4,
+        delta_t=0.02,
     )
 
 

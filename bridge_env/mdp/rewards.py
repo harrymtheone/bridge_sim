@@ -45,33 +45,34 @@ Reference gait tracking rewards.
 
 def track_ref_dof_pos_T1(
         env: ManagerBasedRLEnv,
-        robot_cfg: SceneEntityCfg,
         command_name: str,
         ref_motion_scale: float,
-        double_support_phase: float = -0.3,
         tracking_sigma: float = 5.,
+        robot_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
 ) -> torch.Tensor:
     robot: Articulation = env.scene[robot_cfg.name]
 
     cmd_term: PhaseCommand = env.command_manager.get_term(command_name)
     clocks = cmd_term.get_clocks()
-    clock_l, clock_r = clocks[:, 0], clocks[:, 1]
+    swing_ratio = cmd_term.air_ratio
+    delta_t = cmd_term.delta_t
 
+    ref_dof_pos = torch.zeros_like(robot.data.joint_pos)
     scale_1 = ref_motion_scale
     scale_2 = 2 * scale_1
-    ref_dof_pos = torch.zeros_like(robot.data.joint_pos)
 
-    # left swing (with double support phase)
-    clock_l[clock_l > double_support_phase] = 0
-    ref_dof_pos[:, 10 + 1] = clock_l * scale_1
-    ref_dof_pos[:, 10 + 4] = -clock_l * scale_2
-    ref_dof_pos[:, 10 + 5] = clock_l * scale_1
+    phase_swing = torch.clip((clocks - delta_t / 2) / (swing_ratio - delta_t), min=0., max=1.)
+    clock = torch.sin(torch.pi * phase_swing)
 
-    # right swing (with double support phase)
-    clock_r[clock_r > double_support_phase] = 0
-    ref_dof_pos[:, 10 + 7] = clock_r * scale_1
-    ref_dof_pos[:, 10 + 10] = -clock_r * scale_2
-    ref_dof_pos[:, 10 + 11] = clock_r * scale_1
+    # left motion
+    ref_dof_pos[:, 1] = -clock[:, 0] * scale_1
+    ref_dof_pos[:, 4] = clock[:, 0] * scale_2
+    ref_dof_pos[:, 5] = -clock[:, 0] * scale_1
+
+    # right motion
+    ref_dof_pos[:, 7] = -clock[:, 1] * scale_1
+    ref_dof_pos[:, 10] = clock[:, 1] * scale_2
+    ref_dof_pos[:, 11] = -clock[:, 1] * scale_1
 
     ref_dof_pos[:] += robot.data.default_joint_pos
 
@@ -81,18 +82,25 @@ def track_ref_dof_pos_T1(
 
 def feet_contact_accordance(
         env: ManagerBasedRLEnv,
-        robot_cfg: SceneEntityCfg,
-        contact_sensor_cfg: SceneEntityCfg,
         command_name: str,
+        contact_sensor_cfg: SceneEntityCfg,
         contact_force_threshold: float = 5.0,
 ) -> torch.Tensor:
     contact_sensor: ContactSensor = env.scene[contact_sensor_cfg.name]
     cmd_term: PhaseCommand = env.command_manager.get_term(command_name)
 
-    net_contact_forces = contact_sensor.data.net_forces_w_history
-    is_contact = torch.max(torch.norm(net_contact_forces[:, :, robot_cfg.body_ids], dim=-1), dim=1)[0] > contact_force_threshold
+    swing = cmd_term.swing_mask
+    stance = cmd_term.stance_mask
 
-    rew = torch.where(is_contact == cmd_term.stance_mask, 1., -0.3)
+    net_contact_forces = contact_sensor.data.net_forces_w_history
+    is_contact = torch.max(torch.norm(net_contact_forces[:, :, contact_sensor_cfg.body_ids], dim=-1), dim=1)[0] > contact_force_threshold
+
+    rew = torch.zeros_like(swing, dtype=torch.float)
+    # Case 1: swing
+    # Case 2: stance
+    # Case 3: ~swing & ~stance → reward already 0
+    rew[swing] = torch.where(is_contact[swing], -0.3, 1.0)
+    rew[stance] = torch.where(is_contact[stance], 1.0, -0.3)
     return torch.mean(rew, dim=1)
 
 

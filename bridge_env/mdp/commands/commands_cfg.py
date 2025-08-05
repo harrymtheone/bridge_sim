@@ -23,7 +23,11 @@ class PhaseCommandCfg(CommandTermCfg):
 
     stand_walk_switch: bool = MISSING
 
-    resampling_time_range: tuple[float, float] = (0, 0)
+    air_ratio: float = MISSING
+
+    delta_t: float = MISSING
 
     def __post_init__(self):
         assert self.num_phase_clock == len(self.phase_bias)
+        self.resampling_time_range = self.base_command_cfg.resampling_time_range
+

@@ -1,6 +1,6 @@
 asset_path: /home/harry/projects/parkour_genesis/legged_gym/robots/T1/T1_legs.urdf
 usd_dir: /home/harry/projects/bridge_sim_v2/robots/T1/legs
-usd_file_name: t1.usd
+usd_file_name: t1.whole_body
 force_usd_conversion: true
 make_instanceable: true
 fix_base: false

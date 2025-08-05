@@ -5,7 +5,6 @@ from argparse import Namespace
 from typing import TYPE_CHECKING
 
 import torch
-import wandb
 from isaaclab.envs import ManagerBasedRLEnv
 from torch.utils.tensorboard import SummaryWriter
 

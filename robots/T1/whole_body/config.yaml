@@ -1,6 +1,6 @@
 asset_path: /home/harry/projects/bridge_sim_v2/robots/T1/T1_serial.urdf
 usd_dir: /home/harry/projects/bridge_sim_v2/robots/T1
-usd_file_name: usd
+usd_file_name: whole_body
 force_usd_conversion: true
 make_instanceable: true
 fix_base: false

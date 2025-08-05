@@ -25,6 +25,8 @@ class PhaseCommand(CommandTerm):
         self.num_phase_clock = self.cfg.num_phase_clock
         self.period_s = self.cfg.period_s
         self.phase_bias = torch.tensor(self.cfg.phase_bias, device=env.device).unsqueeze(0)
+        self.air_ratio = cfg.air_ratio
+        self.delta_t = cfg.delta_t
 
         self.phase_length_buf = torch.zeros(env.num_envs, device=env.device)
         self.start_phase = torch.zeros(env.num_envs, device=env.device)
@@ -50,7 +52,7 @@ class PhaseCommand(CommandTerm):
     @property
     def command(self) -> torch.Tensor:
         """The desired base velocity command in the base frame. Shape is (num_envs, 3)."""
-        return torch.cat([self.base_command.command, self.phase_cmd], dim=1)
+        return torch.cat([self.base_command.command, torch.sin(2 * torch.pi * self.phase_cmd)], dim=1)
 
     @property
     def is_standing_env(self) -> torch.Tensor:
@@ -59,10 +61,18 @@ class PhaseCommand(CommandTerm):
 
     @property
     def stance_mask(self) -> torch.Tensor:
-        return self.get_clocks() >= 0 | self.is_standing_env[:, None]
+        phase = self.get_clocks()
+        stance_mask = (phase >= self.air_ratio + self.delta_t) & (phase < (1. - self.delta_t))
+        return stance_mask | self.is_standing_env[:, None]
+
+    @property
+    def swing_mask(self):
+        phase = self.get_clocks()
+        swing_mask = (phase >= self.delta_t) & (phase < (self.air_ratio - self.delta_t))
+        return swing_mask & ~self.is_standing_env[:, None]
 
     def get_clocks(self) -> torch.Tensor:
-        return torch.sin(2 * torch.pi * (self.phase[:, None] + self.phase_bias))
+        return self.phase[:, None] + self.phase_bias
 
     def _update_metrics(self):
         self.base_command._update_metrics()
