@@ -18,7 +18,7 @@ class PPO:
 
         self.cfg = cfg
         self.env = env
-        self.device = env.device
+        self.device = torch.device(env.device)
         self.learning_rate = self.cfg.learning_rate
 
         self.actor: BaseActor | None = None

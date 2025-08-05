@@ -1,7 +1,8 @@
 import math
+import os.path
 
 import isaaclab.sim as sim_utils
-from isaaclab.actuators import ImplicitActuatorCfg
+from isaaclab.actuators import DelayedPDActuatorCfg
 from isaaclab.assets import AssetBaseCfg, ArticulationCfg
 from isaaclab.envs import ManagerBasedRLEnvCfg
 from isaaclab.managers import SceneEntityCfg, RewardTermCfg, TerminationTermCfg, EventTermCfg
@@ -11,7 +12,7 @@ from isaaclab.sensors.ray_caster.patterns.patterns_cfg import GridPatternCfg
 from isaaclab.sim import SimulationCfg, UsdFileCfg, RigidBodyPropertiesCfg, ArticulationRootPropertiesCfg
 from isaaclab.utils import configclass
 
-from bridge_env import mdp
+from bridge_env import BRIDGE_ROBOTS_DIR, mdp
 
 
 @configclass
@@ -22,9 +23,9 @@ class T1ArticulationCfg(ArticulationCfg):
     debug_vis = False
 
     spawn = UsdFileCfg(
-        usd_path='/home/harry/projects/bridge_sim_v2/robots/T1/legs/t1.usd',
+        usd_path=os.path.join(BRIDGE_ROBOTS_DIR, "T1/legs/t1.usd"),
         rigid_props=RigidBodyPropertiesCfg(
-            disable_gravity=True,
+            disable_gravity=False,
             linear_damping=0.,
             angular_damping=0.,
             max_linear_velocity=1000.,
@@ -104,16 +105,16 @@ class T1ArticulationCfg(ArticulationCfg):
 
         for j_name in stiffness:
             # You should understand the difference between implicit and explicit actuator
-            self.actuators[j_name] = ImplicitActuatorCfg(
+            self.actuators[j_name] = DelayedPDActuatorCfg(
                 joint_names_expr=[f".*{j_name}.*"],  # matches joints with name contains j_name
                 # effort_limit=?,  # load from USD file
                 # velocity_limit=?,  # load from USD file
                 stiffness=stiffness[j_name],  # Kp
                 damping=damping[j_name],  # Kd
-                armature=0.1,
+                armature=0.01,
                 friction=0.,
-                # min_delay=0,
-                # max_delay=5,
+                min_delay=0,
+                max_delay=5,
             )
 
 
@@ -125,9 +126,7 @@ class T1SceneCfg(InteractiveSceneCfg):
     ground = AssetBaseCfg(prim_path="/World/defaultGroundPlane", spawn=sim_utils.GroundPlaneCfg())
 
     # lights
-    dome_light = AssetBaseCfg(
-        prim_path="/World/Light", spawn=sim_utils.DomeLightCfg(intensity=3000.0, color=(0.75, 0.75, 0.75))
-    )
+    dome_light = AssetBaseCfg(prim_path="/World/Light", spawn=sim_utils.DomeLightCfg(intensity=3000.0, color=(0.75, 0.75, 0.75)))
 
     # articulation
     robot: T1ArticulationCfg = T1ArticulationCfg()
@@ -200,15 +199,7 @@ class RewardsCfg:
     dof_torques_l2 = RewardTermCfg(func=mdp.joint_torques_l2, weight=-1.0e-5)
     dof_acc_l2 = RewardTermCfg(func=mdp.joint_acc_l2, weight=-2.5e-7)
     action_rate_l2 = RewardTermCfg(func=mdp.action_rate_l2, weight=-0.01)
-    feet_air_time = RewardTermCfg(
-        func=mdp.feet_air_time,
-        weight=0.125,
-        params={
-            "sensor_cfg": SceneEntityCfg("contact_forces", body_names=".*foot.*"),
-            "command_name": "base_velocity",
-            "threshold": 0.5,
-        },
-    )
+
     undesired_contacts = RewardTermCfg(
         func=mdp.undesired_contacts,
         weight=-1.0,
@@ -357,9 +348,9 @@ class CommandsCfg:
 class T1FlatCfg(ManagerBasedRLEnvCfg):
     episode_length_s = 20.0
 
-    decimation = 4
+    decimation = 10
 
-    sim = SimulationCfg(dt=0.005)
+    sim = SimulationCfg(dt=0.002)
 
     scene = T1SceneCfg(num_envs=4096, env_spacing=2.0)
 

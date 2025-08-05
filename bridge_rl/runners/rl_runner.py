@@ -1,12 +1,15 @@
 from __future__ import annotations
 
 import os
+import time
 from argparse import Namespace
 from typing import TYPE_CHECKING
 
 import torch
 from isaaclab.envs import ManagerBasedRLEnv
 from torch.utils.tensorboard import SummaryWriter
+
+from bridge_rl.utils import EpisodeLogger
 
 if TYPE_CHECKING:
     from . import RLRunnerCfg
@@ -25,6 +28,15 @@ class RLRunner:
         # Create algorithm
         self.algorithm = cfg.algorithm_cfg.class_type(cfg.algorithm_cfg, env=self.env)
 
+        # Initialize episode logger
+        self.episode_logger = EpisodeLogger(num_envs=self.env.num_envs)
+
+        # Timing tracking
+        self.collection_time = -1
+        self.learn_time = -1
+        self.tot_time = 0
+        self.tot_steps = 0
+
         self.start_it = 0
         self.cur_it = 0
 
@@ -32,20 +44,28 @@ class RLRunner:
         self.algorithm.train()
 
         observations, infos = self.env.reset()
+        self.episode_logger.reset()
 
         for self.cur_it in range(self.start_it, self.start_it + self.cfg.max_iterations):
+            start_time = time.time()
 
-            # Rollout
             with torch.inference_mode():
                 for _ in range(self.cfg.num_steps_per_env):
                     actions = self.algorithm.act(observations)
                     observations, rewards, terminated, timeouts, infos = self.env.step(actions)
-                    self.algorithm.process_env_step(rewards, terminated, timeouts, infos)
 
-                # Learning step
+                    self.algorithm.process_env_step(rewards.clip(min=0.), terminated, timeouts, infos)
+                    self.episode_logger.step(rewards, terminated, timeouts)
+
                 self.algorithm.compute_returns(observations)
 
+            self.collection_time = time.time() - start_time
+            start_time = time.time()
+
             update_infos = self.algorithm.update()
+
+            self.learn_time = time.time() - start_time
+
             self.log(infos, update_infos)
 
             if self.cur_it % self.cfg.save_interval == 0:
@@ -54,7 +74,7 @@ class RLRunner:
 
     def _prepare_log_dir(self, args):
         algorithm_name = self.cfg.algorithm_cfg.class_type.__name__
-        alg_dir = os.path.join(args.log_root, args.proj_name, algorithm_name)
+        alg_dir: str = os.path.join(args.log_root, args.proj_name, algorithm_name)  # noqa
         self.model_dir = os.path.join(alg_dir, args.exptid)
         os.makedirs(self.model_dir, exist_ok=True)
 
@@ -91,16 +111,45 @@ class RLRunner:
         state_dict['infos'] = infos
         torch.save(state_dict, path)
 
-    def log(self, infos, update_infos):
+    def log(self, infos, update_infos, width=80, pad=35):
+        # Update total step count and time
+        self.tot_steps += self.cfg.num_steps_per_env * self.env.num_envs
+        iteration_time = self.collection_time + self.learn_time
+        self.tot_time += iteration_time
+
+        # Build logger dict
         logger_dict = infos['log']
         logger_dict.update(update_infos)
 
+        logger_dict.update(self.episode_logger.get_logging_dict())
+
         if self.cfg.logger_backend == 'wandb':
+            import wandb
             wandb.log(logger_dict, step=self.cur_it)
+
         elif self.cfg.logger_backend == 'tensorboard':
             for t, v in logger_dict.items():
                 self.logger.add_scalar(t, v, global_step=self.cur_it)
             self.logger.flush()
+
+        # Print progress information
+        progress = f" \033[1m Learning iteration {self.cur_it}/{self.start_it + self.cfg.max_iterations} \033[0m "
+        fps = int(self.cfg.num_steps_per_env * self.env.num_envs / iteration_time)
+        curr_it = self.cur_it - self.start_it
+        eta = self.tot_time / (curr_it + 1) * (self.cfg.max_iterations - curr_it)
+
+        log_string = (
+            f"""{'*' * width}\n"""
+            f"""{progress.center(width, ' ')}\n\n"""
+            f"""{'Computation:':>{pad}} {fps:.0f} steps/s\n"""
+            f"""{'Total timesteps:':>{pad}} {self.tot_steps}\n"""
+            f"""{'Iteration time:':>{pad}} {iteration_time:.2f}s {self.collection_time:.2f}s {self.learn_time:.2f}s\n"""
+            f"""{'Total time:':>{pad}} {self.tot_time:.2f}s\n"""
+            f"""{'ETA:':>{pad}} {eta // 60:.0f} mins {eta % 60:.1f} s\n"""
+            f"""{'CUDA allocated:':>{pad}} {torch.cuda.memory_allocated() / 1024 / 1024:.2f} MB\n"""
+            f"""{'CUDA reserved:':>{pad}} {torch.cuda.memory_reserved() / 1024 / 1024:.2f} MB\n"""
+        )
+        print(log_string)
 
     def play(self):
         self.algorithm.eval()
