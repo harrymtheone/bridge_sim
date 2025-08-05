@@ -33,8 +33,8 @@ def main(args):
     runner = RLRunner(
         cfg=RLRunnerCfg(
             task_cfg=T1FlatCfg(),
-            algorithm_cfg=DreamWaQCfg(),
-            max_iterations=1000,
+            algorithm_cfg=DreamWaQCfg(noise_std_range=(0.3, 1.0)),
+            max_iterations=10000,
         ),
         args=args,
     )

@@ -26,6 +26,7 @@ class PPOCfg:
     # Noise parameters
     entropy_coef: float = 0.01
     init_noise_std: float = 1.0
+    noise_std_range: tuple[float, float] | None = None
     continue_from_last_std: bool = False
 
     # Learning rate scheduling

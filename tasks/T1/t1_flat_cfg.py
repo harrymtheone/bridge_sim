@@ -150,7 +150,7 @@ class T1SceneCfg(InteractiveSceneCfg):
         prim_path="{ENV_REGEX_NS}/Robot/Trunk",
         update_period=0.0,
         history_length=0,
-        debug_vis=True,
+        debug_vis=False,
     )
 
 

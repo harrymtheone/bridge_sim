@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 import time
 from argparse import Namespace
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 import torch
@@ -103,6 +104,10 @@ class RLRunner:
             self.load(resume_path)
 
         if self.cfg.logger_backend == 'tensorboard':
+            tensorboard_file = list(Path(self.model_dir).glob('events.*'))
+            if tensorboard_file:
+                raise FileExistsError("Logging directory not empty!")
+
             self.logger = SummaryWriter(log_dir=self.model_dir)
 
     def save(self, path: str, infos: dict = None):
@@ -138,7 +143,7 @@ class RLRunner:
         curr_it = self.cur_it - self.start_it
         eta = self.tot_time / (curr_it + 1) * (self.cfg.max_iterations - curr_it)
 
-        log_string = (
+        print(
             f"""{'*' * width}\n"""
             f"""{progress.center(width, ' ')}\n\n"""
             f"""{'Computation:':>{pad}} {fps:.0f} steps/s\n"""
@@ -149,7 +154,6 @@ class RLRunner:
             f"""{'CUDA allocated:':>{pad}} {torch.cuda.memory_allocated() / 1024 / 1024:.2f} MB\n"""
             f"""{'CUDA reserved:':>{pad}} {torch.cuda.memory_reserved() / 1024 / 1024:.2f} MB\n"""
         )
-        print(log_string)
 
     def play(self):
         self.algorithm.eval()

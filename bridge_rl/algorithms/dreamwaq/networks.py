@@ -67,7 +67,7 @@ class DreamWaQActor(BaseActor):
                  hidden_dims: Tuple[int, ...] = (256, 128, 64),
                  encoder_output_size: int = 67,
                  channel_size: int = 16):
-        super().__init__()
+        super().__init__(action_size)
 
         self.activation = nn.ELU()
         self.encoder_output_size = encoder_output_size
@@ -94,9 +94,6 @@ class DreamWaQActor(BaseActor):
             activation_func=self.activation,
             output_activation=False
         )
-
-        # Action noise parameter
-        self.log_std = nn.Parameter(torch.zeros(action_size))
 
         # Disable args validation for speedup
         Normal.set_default_validate_args = False
@@ -143,11 +140,6 @@ class DreamWaQActor(BaseActor):
         ot1, est_mu, est_logvar = self.vae(obs_enc, mu_only=False)
         return ot1, est_mu[..., :3], est_mu, est_logvar  # First 3 elements are velocity
 
-    def reset_std(self, std: float, device: torch.device) -> None:
-        """Reset action standard deviation."""
-        new_log_std = torch.log(std * torch.ones_like(self.log_std.data, device=device))
-        self.log_std.data = new_log_std.data
-
 
 class DreamWaQRecurrentActor(BaseRecurrentActor):
     is_recurrent = True
@@ -159,7 +151,7 @@ class DreamWaQRecurrentActor(BaseRecurrentActor):
                  actor_hidden_dims: Tuple[int, ...],
                  encoder_output_size: int,
                  action_size: int):
-        super().__init__()
+        super().__init__(action_size)
 
         self.activation = nn.ELU()
         self.encoder_output_size = encoder_output_size

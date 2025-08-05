@@ -9,9 +9,11 @@ from torch.distributions import Distribution
 class BaseActor(nn.Module):
     is_recurrent: bool
 
-    def __init__(self):
+    def __init__(self, action_size: int):
         super().__init__()
 
+        # Action noise parameter
+        self.log_std = nn.Parameter(torch.zeros(action_size))
         self.distribution: Optional[Distribution] = None
 
     def act(self, obs, eval_: bool = False, **kwargs) -> torch.Tensor:
@@ -74,13 +76,12 @@ class BaseActor(nn.Module):
         return self.distribution.entropy().sum(dim=-1)
 
     def reset_std(self, std: float, device: torch.device) -> None:
-        """Reset action standard deviation.
+        """Reset action standard deviation."""
+        new_log_std = torch.log(std * torch.ones_like(self.log_std.data, device=device))
+        self.log_std.data = new_log_std.data
 
-        Args:
-            std: New standard deviation value
-            device: Device to place the tensor on
-        """
-        raise NotImplementedError("Subclasses must implement reset_std method")
+    def clip_std(self, min_std: float, max_std: float) -> None:
+        self.log_std.data = torch.clamp(self.log_std.data, min_std, max_std)
 
 
 class BaseRecurrentActor(BaseActor):
@@ -91,8 +92,8 @@ class BaseRecurrentActor(BaseActor):
 
     is_recurrent: bool = True
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, action_size: int):
+        super().__init__(action_size)
         # Hidden states (set by subclasses)
         self.hidden_states: Optional[torch.Tensor] = None
 

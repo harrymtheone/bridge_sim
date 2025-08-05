@@ -31,13 +31,15 @@ def main(args):
     from bridge_rl.algorithms.dreamwaq import DreamWaQCfg
 
     task_cfg = T1FlatCfg()
-    task_cfg.scene.num_envs = 16
+    task_cfg.scene.num_envs = 4
+    task_cfg.sim.device = args.device
 
     runner = RLRunner(
         cfg=RLRunnerCfg(
             task_cfg=task_cfg,
             algorithm_cfg=DreamWaQCfg(),
             max_iterations=1000,
+            logger_backend=None
         ),
         args=args,
     )

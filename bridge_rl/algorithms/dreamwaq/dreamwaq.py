@@ -126,6 +126,9 @@ class DreamWaQ(PPO):
             self._update_learning_rate(kl_mean)
             self._gradient_step(total_loss)
 
+            if self.cfg.noise_std_range:
+                self.actor.clip_std(self.cfg.noise_std_range[0], self.cfg.noise_std_range[1])
+
         # Average statistics
         mean_value_loss /= num_updates
         mean_surrogate_loss /= num_updates
