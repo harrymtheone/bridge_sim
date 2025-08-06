@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import torch
 from isaaclab.assets import RigidObject, Articulation
 from isaaclab.envs import ManagerBasedRLEnv
@@ -5,6 +7,7 @@ from isaaclab.managers import SceneEntityCfg
 from isaaclab.sensors import ContactSensor
 
 from bridge_env.mdp.commands.phase_command import PhaseCommand
+from bridge_env.sensors.ray_caster import FootholdRayCaster
 
 """
 Velocity-tracking rewards.
@@ -104,22 +107,26 @@ def feet_contact_accordance(
     return torch.mean(rew, dim=1)
 
 
-def feet_clearance_exp_period(
+def feet_clearance_masked(
         env: ManagerBasedRLEnv,
         command_name: str,
-        robot_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
-        contact_force_threshold: float = 1.0,
-        desired_clearance_height: float = 0.08,
+        sensor_l_cfg: SceneEntityCfg,
+        sensor_r_cfg: SceneEntityCfg,
+        feet_height_target: float,
 ) -> torch.Tensor:
-    robot: Articulation = env.scene[robot_cfg.name]
+    scanner_l: FootholdRayCaster = env.scene.sensors[sensor_l_cfg.name]
+    scanner_r: FootholdRayCaster = env.scene.sensors[sensor_r_cfg.name]
     cmd_term: PhaseCommand = env.command_manager.get_term(command_name)
-    stance = cmd_term.stance_mask
 
-    feet_pos_w = robot.data.body_pos_w[:, robot_cfg.body_ids, :]
-    feet_height = feet_pos_w[:, :, 2]  # Z-coordinate
-    pos_error = torch.square(feet_height - desired_clearance_height) * stance
-    
-    return -torch.sum(pos_error, dim=1)
+    feet_height = torch.stack([
+        scanner_l.data.pos_w[:, 2] - scanner_l.data.ray_hits_w[:, :, 2].mean(dim=1) + scanner_l.cfg.reading_bias_z,
+        scanner_r.data.pos_w[:, 2] - scanner_r.data.ray_hits_w[:, :, 2].mean(dim=1) + scanner_r.cfg.reading_bias_z,
+    ], dim=1)
+
+    rew = (feet_height / feet_height_target).clip(min=-1, max=1)
+    rew[cmd_term.stance_mask] = 0.
+
+    return rew.sum(dim=1)
 
 
 def feet_air_time(

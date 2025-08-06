@@ -5,6 +5,7 @@ def get_arg_parser():
     parser.add_argument('--proj_name', type=str, required=True)
     parser.add_argument('--task', type=str, required=True)
     parser.add_argument('--exptid', type=str, required=True)
+    parser.add_argument('--resume', action='store_true')
     parser.add_argument('--resumeid', type=str)
     parser.add_argument('--checkpoint', type=str)
 

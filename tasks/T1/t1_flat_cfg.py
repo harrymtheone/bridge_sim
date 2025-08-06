@@ -162,8 +162,8 @@ class T1SceneCfg(InteractiveSceneCfg):
             shape=(10, 5),
             size=(0.22, 0.1),
         ),
-        offset=FootholdRayCasterCfg.OffsetCfg(pos=(0.01, 0., 0.)),
-        ray_alignment="foothold",
+        offset=FootholdRayCasterCfg.OffsetCfg(pos=(0.01, 0., -0.02)),
+        reading_bias_z=-0.03,
         update_period=0.0,
         history_length=0,
         debug_vis=True,
@@ -175,8 +175,8 @@ class T1SceneCfg(InteractiveSceneCfg):
             shape=(10, 5),
             size=(0.22, 0.1),
         ),
-        offset=FootholdRayCasterCfg.OffsetCfg(pos=(0.01, 0., 0.)),
-        ray_alignment="foothold",
+        offset=FootholdRayCasterCfg.OffsetCfg(pos=(0.01, 0., -0.02)),
+        reading_bias_z=-0.03,
         update_period=0.0,
         history_length=0,
         debug_vis=True,
@@ -222,26 +222,40 @@ class RewardsCfg:
         params=dict(command_name="base_velocity", tracking_sigma=5)
     )
 
-    # -- penalties
+    # -- regularization
     lin_vel_z_l2 = RewardTermCfg(func=mdp.lin_vel_z_l2, weight=-2.0)
     ang_vel_xy_l2 = RewardTermCfg(func=mdp.ang_vel_xy_l2, weight=-0.05)
     dof_torques_l2 = RewardTermCfg(func=mdp.joint_torques_l2, weight=-1.0e-5)
     dof_acc_l2 = RewardTermCfg(func=mdp.joint_acc_l2, weight=-2.5e-7)
     action_rate_l2 = RewardTermCfg(func=mdp.action_rate_l2, weight=-0.01)
-    feet_air_time = RewardTermCfg(
-        func=mdp.feet_air_time,
-        weight=0.125,
-        params={
-            "sensor_cfg": SceneEntityCfg("contact_forces", body_names=".*foot.*"),
-            "command_name": "base_velocity",
-            "threshold": 0.5,
-        },
+
+    feet_clearance = RewardTermCfg(
+        func=mdp.feet_clearance_masked,
+        weight=1.0,
+        params=dict(
+            command_name="base_velocity",
+            sensor_l_cfg=SceneEntityCfg("left_feet_scanner"),
+            sensor_r_cfg=SceneEntityCfg("right_feet_scanner"),
+            feet_height_target=0.04
+        )
     )
+    # feet_air_time = RewardTermCfg(
+    #     func=mdp.feet_air_time,
+    #     weight=0.125,
+    #     params=dict(
+    #         sensor_cfg=SceneEntityCfg("contact_forces", body_names=".*foot.*"),
+    #         command_name="base_velocity",
+    #         threshold=0.5,
+    #     ),
+    # )
 
     undesired_contacts = RewardTermCfg(
         func=mdp.undesired_contacts,
         weight=-1.0,
-        params={"sensor_cfg": SceneEntityCfg("contact_forces", body_names="Trunk"), "threshold": 1.0},
+        params=dict(
+            sensor_cfg=SceneEntityCfg("contact_forces", body_names="Trunk"),
+            threshold=1.0
+        ),
     )
 
     # -- optional penalties

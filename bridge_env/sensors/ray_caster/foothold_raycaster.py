@@ -5,7 +5,6 @@ from typing import Sequence, TYPE_CHECKING
 import omni.log
 import omni.physics.tensors.impl.api as physx
 import torch
-from isaaclab.markers import VisualizationMarkers
 from isaaclab.sensors import RayCaster
 from isaaclab.utils.math import quat_apply, convert_quat, quat_apply_yaw
 from isaaclab.utils.warp import raycast_mesh
@@ -17,6 +16,7 @@ if TYPE_CHECKING:
 
 class FootholdRayCaster(RayCaster):
     cfg: FootholdRayCasterCfg
+    ray_starts_w: torch.Tensor
 
     def _update_buffers_impl(self, env_ids: Sequence[int]):
         """Fills the buffers of the sensor data."""
@@ -56,28 +56,7 @@ class FootholdRayCaster(RayCaster):
             # log the warning
             omni.log.warn(msg)
         # ray cast based on the sensor poses
-        if self.cfg.ray_alignment == "world":
-            # apply horizontal drift to ray starting position in ray caster frame
-            pos_w[:, 0:2] += self.ray_cast_drift[env_ids, 0:2]
-            # no rotation is considered and directions are not rotated
-            ray_starts_w = self.ray_starts[env_ids]
-            ray_starts_w += pos_w.unsqueeze(1)
-            ray_directions_w = self.ray_directions[env_ids]
-        elif self.cfg.ray_alignment == "yaw":
-            # apply horizontal drift to ray starting position in ray caster frame
-            pos_w[:, 0:2] += quat_apply_yaw(quat_w, self.ray_cast_drift[env_ids])[:, 0:2]
-            # only yaw orientation is considered and directions are not rotated
-            ray_starts_w = quat_apply_yaw(quat_w.repeat(1, self.num_rays), self.ray_starts[env_ids])
-            ray_starts_w += pos_w.unsqueeze(1)
-            ray_directions_w = self.ray_directions[env_ids]
-        elif self.cfg.ray_alignment == "base":
-            # apply horizontal drift to ray starting position in ray caster frame
-            pos_w[:, 0:2] += quat_apply(quat_w, self.ray_cast_drift[env_ids])[:, 0:2]
-            # full orientation is considered
-            ray_starts_w = quat_apply(quat_w.repeat(1, self.num_rays), self.ray_starts[env_ids])
-            ray_starts_w += pos_w.unsqueeze(1)
-            ray_directions_w = quat_apply(quat_w.repeat(1, self.num_rays), self.ray_directions[env_ids])
-        elif self.cfg.ray_alignment == "foothold":
+        if self.cfg.ray_alignment == "foothold":
             # apply horizontal drift to ray starting position in ray caster frame
             pos_w[:, 0:2] += quat_apply(quat_w, self.ray_cast_drift[env_ids])[:, 0:2]
             # full orientation is considered
@@ -89,6 +68,7 @@ class FootholdRayCaster(RayCaster):
 
         # ray cast and store the hits
         # TODO: Make this work for multiple meshes?
+        self.ray_starts_w = ray_starts_w
         self._data.ray_hits_w[env_ids] = raycast_mesh(
             ray_starts_w,
             ray_directions_w,
@@ -98,3 +78,14 @@ class FootholdRayCaster(RayCaster):
 
         # apply vertical drift to ray starting position in ray caster frame
         self._data.ray_hits_w[env_ids, :, 2] += self.ray_cast_drift[env_ids, 2].unsqueeze(-1)
+
+    def _debug_vis_callback(self, event):
+        # remove possible inf values
+        if not hasattr(self, 'ray_starts_w'):
+            return
+
+        viz_points = self.ray_starts_w.reshape(-1, 3)
+        # viz_points = self._data.ray_hits_w.reshape(-1, 3)
+        viz_points = viz_points[~torch.any(torch.isinf(viz_points), dim=1)]
+        # show ray hit positions
+        self.ray_visualizer.visualize(viz_points)
