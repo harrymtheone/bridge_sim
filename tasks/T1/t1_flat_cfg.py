@@ -8,11 +8,12 @@ from isaaclab.envs import ManagerBasedRLEnvCfg
 from isaaclab.managers import SceneEntityCfg, RewardTermCfg, TerminationTermCfg, EventTermCfg
 from isaaclab.scene import InteractiveSceneCfg
 from isaaclab.sensors import ContactSensorCfg, RayCasterCfg
-from isaaclab.sensors.ray_caster.patterns.patterns_cfg import GridPatternCfg
 from isaaclab.sim import SimulationCfg, UsdFileCfg, RigidBodyPropertiesCfg, ArticulationRootPropertiesCfg
 from isaaclab.utils import configclass
 
 from bridge_env import BRIDGE_ROBOTS_DIR, mdp
+from bridge_env.sensors.ray_caster import FootholdRayCasterCfg
+from bridge_env.sensors.ray_caster.patterns import GridPatternCfg
 
 
 @configclass
@@ -140,17 +141,45 @@ class T1SceneCfg(InteractiveSceneCfg):
         debug_vis=False,
     )
 
-    height_scanner = RayCasterCfg(
-        mesh_prim_paths=["/World/defaultGroundPlane"],
-        ray_alignment="yaw",
-        pattern_cfg=GridPatternCfg(
-            resolution=0.05,
-            size=(1.8, 3.2),
-        ),
+    scan_scanner = RayCasterCfg(
         prim_path="{ENV_REGEX_NS}/Robot/Trunk",
+        mesh_prim_paths=["/World/defaultGroundPlane"],
+        pattern_cfg=GridPatternCfg(
+            shape=(32, 16),
+            size=(1.6, 0.8),
+        ),
+        offset=RayCasterCfg.OffsetCfg(pos=(0.3, 0., 0.)),
+        ray_alignment="yaw",
         update_period=0.0,
         history_length=0,
         debug_vis=False,
+    )
+
+    left_feet_scanner = FootholdRayCasterCfg(
+        prim_path="{ENV_REGEX_NS}/Robot/left_foot_link",
+        mesh_prim_paths=["/World/defaultGroundPlane"],
+        pattern_cfg=GridPatternCfg(
+            shape=(10, 5),
+            size=(0.22, 0.1),
+        ),
+        offset=FootholdRayCasterCfg.OffsetCfg(pos=(0.01, 0., 0.)),
+        ray_alignment="foothold",
+        update_period=0.0,
+        history_length=0,
+        debug_vis=True,
+    )
+    right_feet_scanner = FootholdRayCasterCfg(
+        prim_path="{ENV_REGEX_NS}/Robot/right_foot_link",
+        mesh_prim_paths=["/World/defaultGroundPlane"],
+        pattern_cfg=GridPatternCfg(
+            shape=(10, 5),
+            size=(0.22, 0.1),
+        ),
+        offset=FootholdRayCasterCfg.OffsetCfg(pos=(0.01, 0., 0.)),
+        ray_alignment="foothold",
+        update_period=0.0,
+        history_length=0,
+        debug_vis=True,
     )
 
 
@@ -236,7 +265,7 @@ class TerminationsCfg:
         func=mdp.bad_orientation,
         params=dict(
             asset_cfg=SceneEntityCfg("robot", body_names="Trunk"),
-            limit_angle=math.pi / 2,
+            limit_angle=math.pi / 3,
         ),
     )
 

@@ -24,13 +24,12 @@ class RLRunner:
         self.env = ManagerBasedRLEnv(cfg=cfg.task_cfg)
         self.device = args.device
 
-        self._prepare_log_dir(args)
-
         # Create algorithm
         self.algorithm = cfg.algorithm_cfg.class_type(cfg.algorithm_cfg, env=self.env)
 
         # Initialize episode logger
         self.episode_logger = EpisodeLogger(num_envs=self.env.num_envs)
+        self._prepare_log_dir(args)
 
         # Timing tracking
         self.collection_time = -1
@@ -79,7 +78,10 @@ class RLRunner:
         self.model_dir = os.path.join(alg_dir, args.exptid)
         os.makedirs(self.model_dir, exist_ok=True)
 
-        if args.resumeid:
+        if args.resume or args.resumeid:
+            if args.resumeid is None:
+                args.resumeid = args.exptid
+
             resume_dir = os.path.join(alg_dir, args.resumeid)
 
             if not os.path.isdir(resume_dir):

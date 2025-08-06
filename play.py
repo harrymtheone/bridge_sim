@@ -34,6 +34,7 @@ def main(args):
     task_cfg.scene.num_envs = 4
     task_cfg.sim.device = args.device
 
+    args.resume = True
     runner = RLRunner(
         cfg=RLRunnerCfg(
             task_cfg=task_cfg,
@@ -43,8 +44,6 @@ def main(args):
         ),
         args=args,
     )
-
-    runner.load('/home/harry/projects/bridge_sim_v2/logs/t1/DreamWaQ/t1_dream_002/latest.pt')
 
     runner.play()
 

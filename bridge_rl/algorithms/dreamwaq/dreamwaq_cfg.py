@@ -51,7 +51,7 @@ class DreamWaQObservationsCfg:
 
     @configclass
     class Scan(ObservationGroupCfg):
-        scan = ObservationTermCfg(func=mdp.height_scan, params={"sensor_cfg": SceneEntityCfg(name="height_scanner"), "offset": 0.7})
+        scan = ObservationTermCfg(func=mdp.height_scan, params={"sensor_cfg": SceneEntityCfg(name="scan_scanner"), "offset": 0.7})
 
     scan: Scan = Scan()
 

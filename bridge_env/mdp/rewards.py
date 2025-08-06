@@ -104,7 +104,7 @@ def feet_contact_accordance(
     return torch.mean(rew, dim=1)
 
 
-def feet_clearance_period(
+def feet_clearance_exp_period(
         env: ManagerBasedRLEnv,
         command_name: str,
         robot_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
