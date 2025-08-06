@@ -104,6 +104,24 @@ def feet_contact_accordance(
     return torch.mean(rew, dim=1)
 
 
+def feet_clearance_period(
+        env: ManagerBasedRLEnv,
+        command_name: str,
+        robot_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+        contact_force_threshold: float = 1.0,
+        desired_clearance_height: float = 0.08,
+) -> torch.Tensor:
+    robot: Articulation = env.scene[robot_cfg.name]
+    cmd_term: PhaseCommand = env.command_manager.get_term(command_name)
+    stance = cmd_term.stance_mask
+
+    feet_pos_w = robot.data.body_pos_w[:, robot_cfg.body_ids, :]
+    feet_height = feet_pos_w[:, :, 2]  # Z-coordinate
+    pos_error = torch.square(feet_height - desired_clearance_height) * stance
+    
+    return -torch.sum(pos_error, dim=1)
+
+
 def feet_air_time(
         env: ManagerBasedRLEnv, command_name: str, sensor_cfg: SceneEntityCfg, threshold: float
 ) -> torch.Tensor:
@@ -122,5 +140,5 @@ def feet_air_time(
     last_air_time = contact_sensor.data.last_air_time[:, sensor_cfg.body_ids]
     reward = torch.sum((last_air_time - threshold) * first_contact, dim=1)
     # no reward for zero command
-    reward *= torch.norm(env.command_manager.get_command(command_name)[:, :2], dim=1) > 0.1
+    reward *= ~env.command_manager.get_term(command_name).is_standing_env
     return reward

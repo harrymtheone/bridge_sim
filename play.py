@@ -44,7 +44,7 @@ def main(args):
         args=args,
     )
 
-    runner.load('/home/harry/projects/bridge_sim_v2/logs/t1/DreamWaQ/t1_dream_001/latest.pt')
+    runner.load('/home/harry/projects/bridge_sim_v2/logs/t1/DreamWaQ/t1_dream_002/latest.pt')
 
     runner.play()
 

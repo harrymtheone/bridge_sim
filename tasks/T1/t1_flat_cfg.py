@@ -199,6 +199,15 @@ class RewardsCfg:
     dof_torques_l2 = RewardTermCfg(func=mdp.joint_torques_l2, weight=-1.0e-5)
     dof_acc_l2 = RewardTermCfg(func=mdp.joint_acc_l2, weight=-2.5e-7)
     action_rate_l2 = RewardTermCfg(func=mdp.action_rate_l2, weight=-0.01)
+    feet_air_time = RewardTermCfg(
+        func=mdp.feet_air_time,
+        weight=0.125,
+        params={
+            "sensor_cfg": SceneEntityCfg("contact_forces", body_names=".*foot.*"),
+            "command_name": "base_velocity",
+            "threshold": 0.5,
+        },
+    )
 
     undesired_contacts = RewardTermCfg(
         func=mdp.undesired_contacts,

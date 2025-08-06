@@ -1,9 +1,11 @@
 from __future__ import annotations
 
-from typing import Optional, Dict, Any, Union, Tuple
+import math
+from typing import Optional, Any
+
 import torch
 import torch.nn as nn
-from torch.distributions import Distribution
+from torch.distributions import Distribution, Normal
 
 
 class BaseActor(nn.Module):
@@ -15,6 +17,9 @@ class BaseActor(nn.Module):
         # Action noise parameter
         self.log_std = nn.Parameter(torch.zeros(action_size))
         self.distribution: Optional[Distribution] = None
+
+        # Disable args validation for speedup
+        Normal.set_default_validate_args = False
 
     def act(self, obs, eval_: bool = False, **kwargs) -> torch.Tensor:
         """Generate actions from observations.
@@ -81,7 +86,7 @@ class BaseActor(nn.Module):
         self.log_std.data = new_log_std.data
 
     def clip_std(self, min_std: float, max_std: float) -> None:
-        self.log_std.data = torch.clamp(self.log_std.data, min_std, max_std)
+        self.log_std.data = torch.clamp(self.log_std.data, math.log(min_std), math.log(max_std))
 
 
 class BaseRecurrentActor(BaseActor):

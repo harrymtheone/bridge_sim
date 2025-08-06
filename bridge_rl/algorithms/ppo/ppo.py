@@ -234,8 +234,7 @@ class PPO:
             self.optimizer.load_state_dict(loaded_dict['optimizer_state_dict'])
 
         # Reset noise standard deviation if needed
-        if (hasattr(self.actor, 'reset_std') and
-                not self.cfg.continue_from_last_std):
+        if not self.cfg.continue_from_last_std:
             self.actor.reset_std(self.cfg.init_noise_std, device=self.device)
 
         return loaded_dict.get('infos', None)

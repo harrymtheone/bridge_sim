@@ -30,14 +30,17 @@ def main(args):
     from tasks.T1 import T1FlatCfg
     from bridge_rl.algorithms.dreamwaq import DreamWaQCfg
 
-    runner = RLRunner(
-        cfg=RLRunnerCfg(
-            task_cfg=T1FlatCfg(),
-            algorithm_cfg=DreamWaQCfg(noise_std_range=(0.3, 1.0)),
-            max_iterations=10000,
-        ),
-        args=args,
+    runner_cfg = RLRunnerCfg(
+        task_cfg=T1FlatCfg(),
+        algorithm_cfg=DreamWaQCfg(noise_std_range=(0.3, 1.0)),
+        max_iterations=10000,
     )
+
+    if args.debug:
+        runner_cfg.task_cfg.scene.num_envs = 64
+        runner_cfg.logger_backend = None
+
+    runner = RLRunner(cfg=runner_cfg, args=args)
 
     runner.learn()
 

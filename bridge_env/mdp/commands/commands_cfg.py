@@ -30,4 +30,4 @@ class PhaseCommandCfg(CommandTermCfg):
     def __post_init__(self):
         assert self.num_phase_clock == len(self.phase_bias)
         self.resampling_time_range = self.base_command_cfg.resampling_time_range
-
+        self.debug_vis = self.base_command_cfg.debug_vis

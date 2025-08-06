@@ -178,12 +178,6 @@ class DreamWaQRecurrentActor(BaseRecurrentActor):
             output_activation=False
         )
 
-        # Action noise parameter
-        self.log_std = nn.Parameter(torch.zeros(action_size))
-
-        # Disable args validation for speedup
-        Normal.set_default_validate_args = False
-
     def act(self,
             obs: dict[str, torch.Tensor],
             use_estimated_value=True,
@@ -234,11 +228,6 @@ class DreamWaQRecurrentActor(BaseRecurrentActor):
         obs_enc, _ = self.gru(obs.proprio, hidden_states)
         ot1, est_mu, est_logvar = recurrent_wrapper(self.vae.forward, obs_enc, mu_only=False)
         return ot1, est_mu[..., :3], est_mu, est_logvar
-
-    def reset_std(self, std: float, device: torch.device) -> None:
-        """Reset action standard deviation."""
-        new_log_std = torch.log(std * torch.ones_like(self.log_std.data, device=device))
-        self.log_std.data = new_log_std.data
 
 
 class DreamWaQCritic(BaseCritic):
