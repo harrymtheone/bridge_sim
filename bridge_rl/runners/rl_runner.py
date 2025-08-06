@@ -10,6 +10,7 @@ import torch
 from isaaclab.envs import ManagerBasedRLEnv
 from torch.utils.tensorboard import SummaryWriter
 
+from bridge_env.mdp import PhaseCommand
 from bridge_rl.utils import EpisodeLogger
 
 if TYPE_CHECKING:
@@ -54,7 +55,12 @@ class RLRunner:
                     actions = self.algorithm.act(observations)
                     observations, rewards, terminated, timeouts, infos = self.env.step(actions)
 
-                    self.algorithm.process_env_step(rewards.clip(min=0.), terminated, timeouts, infos)
+                    if self.cur_it < 100:
+                        rewards_clipped = rewards.clip(min=0.)
+                    else:
+                        rewards_clipped = rewards
+
+                    self.algorithm.process_env_step(rewards_clipped, terminated, timeouts, infos)
                     self.episode_logger.step(rewards, terminated, timeouts)
 
                 self.algorithm.compute_returns(observations)
@@ -164,7 +170,32 @@ class RLRunner:
         with torch.inference_mode():
             while True:
                 rtn = self.algorithm.play_act(observations)
-                observations, rewards, terminated, timeouts, infos = self.env.step(rtn['actions'])
+
+                actions = rtn['actions']
+
+                # robot = self.env.scene['robot']
+                # cmd_term: PhaseCommand = self.env.command_manager.get_term('base_velocity')  # noqa
+                # ref_dof_pos = torch.zeros_like(robot.data.joint_pos)
+                # swing_ratio = cmd_term.air_ratio
+                # delta_t = cmd_term.delta_t
+                # scale_1 = 0.6
+                # scale_2 = 2 * scale_1
+                # phase_swing = torch.clip((cmd_term.get_clocks() - delta_t / 2) / (swing_ratio - delta_t), min=0., max=1.)
+                # clock = torch.sin(torch.pi * phase_swing)
+                #
+                # # left motion
+                # ref_dof_pos[:, 1] = -clock[:, 0] * scale_1
+                # ref_dof_pos[:, 7] = clock[:, 0] * scale_2
+                # ref_dof_pos[:, 9] = -clock[:, 0] * scale_1
+                #
+                # # right motion
+                # ref_dof_pos[:, 2] = -clock[:, 1] * scale_1
+                # ref_dof_pos[:, 8] = clock[:, 1] * scale_2
+                # ref_dof_pos[:, 10] = -clock[:, 1] * scale_1
+                #
+                # actions = ref_dof_pos
+
+                observations, rewards, terminated, timeouts, infos = self.env.step(actions)
 
     def load(self, path, load_optimizer=True):
         print("*" * 80)

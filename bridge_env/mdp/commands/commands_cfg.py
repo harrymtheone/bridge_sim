@@ -13,11 +13,11 @@ class PhaseCommandCfg(CommandTermCfg):
 
     base_command_cfg: CommandTermCfg = MISSING
 
-    num_phase_clock: int = MISSING
+    num_clocks: int = MISSING
 
     period_s: float = MISSING
 
-    phase_bias: List[float] = MISSING
+    clock_bias: List[float] = MISSING
 
     randomize_start_phase: bool = MISSING
 
@@ -28,6 +28,6 @@ class PhaseCommandCfg(CommandTermCfg):
     delta_t: float = MISSING
 
     def __post_init__(self):
-        assert self.num_phase_clock == len(self.phase_bias)
+        assert self.num_clocks == len(self.clock_bias)
         self.resampling_time_range = self.base_command_cfg.resampling_time_range
         self.debug_vis = self.base_command_cfg.debug_vis

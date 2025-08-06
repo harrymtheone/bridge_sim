@@ -3,8 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Sequence
 
 import torch
-from isaaclab.assets import Articulation
-from isaaclab.envs import ManagerBasedEnv
+from isaaclab.envs import ManagerBasedRLEnv
 from isaaclab.managers import CommandTerm
 
 if TYPE_CHECKING:
@@ -14,17 +13,16 @@ if TYPE_CHECKING:
 class PhaseCommand(CommandTerm):
     cfg: PhaseCommandCfg
 
-    def __init__(self, cfg: PhaseCommandCfg, env: ManagerBasedEnv):
-        self.env: ManagerBasedEnv = env
-        self.robot: Articulation = env.scene[cfg.base_command_cfg.asset_name]
+    def __init__(self, cfg: PhaseCommandCfg, env: ManagerBasedRLEnv):
+        self.env: ManagerBasedRLEnv = env
         self.base_command_cfg = cfg.base_command_cfg
         self.base_command = self.base_command_cfg.class_type(self.base_command_cfg, env)
 
         super().__init__(cfg, env)
 
-        self.num_phase_clock = self.cfg.num_phase_clock
+        self.num_phase_clock = self.cfg.num_clocks
         self.period_s = self.cfg.period_s
-        self.phase_bias = torch.tensor(self.cfg.phase_bias, device=env.device).unsqueeze(0)
+        self.phase_bias = torch.tensor(self.cfg.clock_bias, device=env.device).unsqueeze(0)
         self.air_ratio = cfg.air_ratio
         self.delta_t = cfg.delta_t
 
@@ -42,7 +40,7 @@ class PhaseCommand(CommandTerm):
         msg += f"\tBase command dimension: {self.base_command.command.size(1)}\n"
         msg += f"\tNumber of phase clock: {self.num_phase_clock}\n"
         msg += f"\tPeriod: {self.period_s}s\n"
-        msg += f"\tPhase bias: {self.cfg.phase_bias}\n"
+        msg += f"\tPhase bias: {self.cfg.clock_bias}\n"
         return msg
 
     """
@@ -57,7 +55,7 @@ class PhaseCommand(CommandTerm):
     @property
     def is_standing_env(self) -> torch.Tensor:
         assert hasattr(self.base_command, "is_standing_env"), "base command must have is_standing_env attribute"
-        return self.base_command.is_standing_env
+        return self.base_command.is_standing_env  # noqa
 
     @property
     def stance_mask(self) -> torch.Tensor:
@@ -72,7 +70,7 @@ class PhaseCommand(CommandTerm):
         return swing_mask & ~self.is_standing_env[:, None]
 
     def get_clocks(self) -> torch.Tensor:
-        return self.phase[:, None] + self.phase_bias
+        return (self.phase[:, None] + self.phase_bias) % 1.0
 
     def _update_metrics(self):
         self.base_command._update_metrics()

@@ -6,7 +6,7 @@ import omni.log
 import omni.physics.tensors.impl.api as physx
 import torch
 from isaaclab.sensors import RayCaster
-from isaaclab.utils.math import quat_apply, convert_quat, quat_apply_yaw
+from isaaclab.utils.math import quat_apply, convert_quat
 from isaaclab.utils.warp import raycast_mesh
 from isaacsim.core.prims import XFormPrim
 
@@ -17,6 +17,10 @@ if TYPE_CHECKING:
 class FootholdRayCaster(RayCaster):
     cfg: FootholdRayCasterCfg
     ray_starts_w: torch.Tensor
+
+    def _initialize_rays_impl(self):
+        super()._initialize_rays_impl()
+        self.ray_starts_w = self.ray_starts.clone()
 
     def _update_buffers_impl(self, env_ids: Sequence[int]):
         """Fills the buffers of the sensor data."""
@@ -81,11 +85,8 @@ class FootholdRayCaster(RayCaster):
 
     def _debug_vis_callback(self, event):
         # remove possible inf values
-        if not hasattr(self, 'ray_starts_w'):
-            return
-
-        viz_points = self.ray_starts_w.reshape(-1, 3)
-        # viz_points = self._data.ray_hits_w.reshape(-1, 3)
+        # viz_points = self.ray_starts_w.reshape(-1, 3)
+        viz_points = self._data.ray_hits_w.reshape(-1, 3)
         viz_points = viz_points[~torch.any(torch.isinf(viz_points), dim=1)]
         # show ray hit positions
         self.ray_visualizer.visualize(viz_points)

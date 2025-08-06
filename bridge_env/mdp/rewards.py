@@ -69,13 +69,13 @@ def track_ref_dof_pos_T1(
 
     # left motion
     ref_dof_pos[:, 1] = -clock[:, 0] * scale_1
-    ref_dof_pos[:, 4] = clock[:, 0] * scale_2
-    ref_dof_pos[:, 5] = -clock[:, 0] * scale_1
+    ref_dof_pos[:, 7] = clock[:, 0] * scale_2
+    ref_dof_pos[:, 9] = -clock[:, 0] * scale_1
 
     # right motion
-    ref_dof_pos[:, 7] = -clock[:, 1] * scale_1
-    ref_dof_pos[:, 10] = clock[:, 1] * scale_2
-    ref_dof_pos[:, 11] = -clock[:, 1] * scale_1
+    ref_dof_pos[:, 2] = -clock[:, 1] * scale_1
+    ref_dof_pos[:, 8] = clock[:, 1] * scale_2
+    ref_dof_pos[:, 10] = -clock[:, 1] * scale_1
 
     ref_dof_pos[:] += robot.data.default_joint_pos
 
@@ -118,12 +118,12 @@ def feet_clearance_masked(
     scanner_r: FootholdRayCaster = env.scene.sensors[sensor_r_cfg.name]
     cmd_term: PhaseCommand = env.command_manager.get_term(command_name)
 
-    feet_height = torch.stack([
-        scanner_l.data.pos_w[:, 2] - scanner_l.data.ray_hits_w[:, :, 2].mean(dim=1) + scanner_l.cfg.reading_bias_z,
-        scanner_r.data.pos_w[:, 2] - scanner_r.data.ray_hits_w[:, :, 2].mean(dim=1) + scanner_r.cfg.reading_bias_z,
+    foothold_pts_height = torch.stack([
+        scanner_l.ray_starts_w[:, :, 2] - scanner_l.data.ray_hits_w[:, :, 2] + scanner_l.cfg.reading_bias_z,
+        scanner_r.ray_starts_w[:, :, 2] - scanner_r.data.ray_hits_w[:, :, 2] + scanner_r.cfg.reading_bias_z,
     ], dim=1)
 
-    rew = (feet_height / feet_height_target).clip(min=-1, max=1)
+    rew = (foothold_pts_height.mean(dim=2) / feet_height_target).clip(min=-1, max=1)
     rew[cmd_term.stance_mask] = 0.
 
     return rew.sum(dim=1)
@@ -149,3 +149,28 @@ def feet_air_time(
     # no reward for zero command
     reward *= ~env.command_manager.get_term(command_name).is_standing_env
     return reward
+
+
+def foothold(
+        env: ManagerBasedRLEnv,
+        scanner_l_cfg: SceneEntityCfg,
+        scanner_r_cfg: SceneEntityCfg,
+        contact_sensor_cfg: SceneEntityCfg,
+        foothold_contact_thresh: float = 0.01,
+        contact_force_threshold: float = 5.0,
+) -> torch.Tensor:
+    scanner_l: FootholdRayCaster = env.scene.sensors[scanner_l_cfg.name]
+    scanner_r: FootholdRayCaster = env.scene.sensors[scanner_r_cfg.name]
+    contact_sensor: ContactSensor = env.scene.sensors[contact_sensor_cfg.name]
+
+    foothold_pts_height = torch.stack([
+        scanner_l.ray_starts_w[:, :, 2] - scanner_l.data.ray_hits_w[:, :, 2] + scanner_l.cfg.reading_bias_z,
+        scanner_r.ray_starts_w[:, :, 2] - scanner_r.data.ray_hits_w[:, :, 2] + scanner_r.cfg.reading_bias_z,
+    ], dim=1)
+
+    valid_foothold_perc = (foothold_pts_height < foothold_contact_thresh).sum(2) / foothold_pts_height.size(2)
+
+    net_contact_forces = contact_sensor.data.net_forces_w_history
+    is_contact = torch.max(torch.norm(net_contact_forces[:, :, contact_sensor_cfg.body_ids], dim=-1), dim=1)[0] > contact_force_threshold
+    rew = (1 - valid_foothold_perc) * is_contact
+    return rew.sum(dim=1)
