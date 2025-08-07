@@ -10,7 +10,7 @@ from . import grid_pattern
 
 
 @configclass
-class GridPatternCfg(PatternBaseCfg):
+class GridPatternV2Cfg(PatternBaseCfg):
     """Configuration for the grid pattern for ray-casting.
 
     Defines a 2D grid of rays in the coordinates of the sensor.

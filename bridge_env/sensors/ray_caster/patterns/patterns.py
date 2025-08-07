@@ -8,7 +8,7 @@ if TYPE_CHECKING:
     from . import patterns_cfg
 
 
-def grid_pattern(cfg: patterns_cfg.GridPatternCfg, device: str) -> tuple[torch.Tensor, torch.Tensor]:
+def grid_pattern(cfg: patterns_cfg.GridPatternV2Cfg, device: str) -> tuple[torch.Tensor, torch.Tensor]:
     # check valid arguments
     if cfg.ordering not in ["xy", "yx"]:
         raise ValueError(f"Ordering must be 'xy' or 'yx'. Received: '{cfg.ordering}'.")

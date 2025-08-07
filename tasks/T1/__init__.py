@@ -1,1 +1,1 @@
-from .t1_flat_cfg import T1FlatCfg
+from .t1_flat_cfg import T1FlatEnvCfg

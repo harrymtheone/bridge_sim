@@ -14,7 +14,7 @@ from isaaclab.utils import configclass
 from bridge_env import BRIDGE_ROBOTS_DIR
 from bridge_env.envs import mdp
 from bridge_env.sensors.ray_caster import FootholdRayCasterCfg
-from bridge_env.sensors.ray_caster.patterns import GridPatternCfg
+from bridge_env.sensors.ray_caster.patterns import GridPatternV2Cfg
 
 
 @configclass
@@ -145,7 +145,7 @@ class T1SceneCfg(InteractiveSceneCfg):
     scan_scanner = RayCasterCfg(
         prim_path="{ENV_REGEX_NS}/Robot/Trunk",
         mesh_prim_paths=["/World/defaultGroundPlane"],
-        pattern_cfg=GridPatternCfg(
+        pattern_cfg=GridPatternV2Cfg(
             shape=(32, 16),
             size=(1.6, 0.8),
         ),
@@ -159,41 +159,39 @@ class T1SceneCfg(InteractiveSceneCfg):
     left_feet_scanner = FootholdRayCasterCfg(
         prim_path="{ENV_REGEX_NS}/Robot/left_foot_link",
         mesh_prim_paths=["/World/defaultGroundPlane"],
-        pattern_cfg=GridPatternCfg(
+        pattern_cfg=GridPatternV2Cfg(
             shape=(10, 5),
             size=(0.22, 0.1),
         ),
         offset=FootholdRayCasterCfg.OffsetCfg(pos=(0.01, 0., -0.02)),
         reading_bias_z=-0.01,
-        update_period=0.0,
-        history_length=0,
+        max_distance=0.5,
         debug_vis=False,
     )
     right_feet_scanner = FootholdRayCasterCfg(
         prim_path="{ENV_REGEX_NS}/Robot/right_foot_link",
         mesh_prim_paths=["/World/defaultGroundPlane"],
-        pattern_cfg=GridPatternCfg(
+        pattern_cfg=GridPatternV2Cfg(
             shape=(10, 5),
             size=(0.22, 0.1),
         ),
         offset=FootholdRayCasterCfg.OffsetCfg(pos=(0.01, 0., -0.02)),
         reading_bias_z=-0.01,
-        update_period=0.0,
-        history_length=0,
+        max_distance=0.5,
         debug_vis=False,
     )
 
 
 @configclass
 class ActionsCfg:
-    joint_pos = mdp.JointPositionActionCfg(asset_name="robot", joint_names=[".*"], scale=0.5, use_default_offset=True)
+    joint_pos = mdp.act.JointPositionActionCfg(asset_name="robot", joint_names=[".*"], scale=0.5, use_default_offset=True)
 
 
 @configclass
 class RewardsCfg:
     # ##################################### gait #####################################
     track_ref_joint_pos = RewardTermCfg(
-        func=mdp.track_ref_dof_pos_T1,
+        func=mdp.rew.track_ref_dof_pos_T1,
         weight=2.0,
         params=dict(
             command_name='base_velocity',
@@ -210,7 +208,7 @@ class RewardsCfg:
     )
 
     contact_accordance = RewardTermCfg(
-        func=mdp.feet_contact_accordance,
+        func=mdp.rew.feet_contact_accordance,
         weight=1.2,
         params=dict(
             command_name='base_velocity',
@@ -219,7 +217,7 @@ class RewardsCfg:
     )
 
     feet_clearance = RewardTermCfg(
-        func=mdp.feet_clearance_masked,
+        func=mdp.rew.feet_clearance_masked,
         weight=0.6,
         params=dict(
             command_name="base_velocity",
@@ -239,7 +237,7 @@ class RewardsCfg:
     # )
 
     feet_distance = RewardTermCfg(
-        func=mdp.link_distance_xy,
+        func=mdp.rew.link_distance_xy,
         weight=-1.,
         params=dict(
             robot_cfg=SceneEntityCfg("robot", body_names=("left_foot_link", "right_foot_link")),
@@ -248,7 +246,7 @@ class RewardsCfg:
     )
 
     knee_distance = RewardTermCfg(
-        func=mdp.link_distance_xy,
+        func=mdp.rew.link_distance_xy,
         weight=-1.,
         params=dict(
             robot_cfg=SceneEntityCfg("robot", body_names=("Ankle_Cross_Left", "Ankle_Cross_Right")),
@@ -257,7 +255,7 @@ class RewardsCfg:
     )
 
     feet_rotation = RewardTermCfg(
-        func=mdp.link_orientation_euler,
+        func=mdp.rew.link_orientation_euler,
         weight=-0.3,
         params=dict(
             robot_cfg=SceneEntityCfg("robot", body_names=("left_foot_link", "right_foot_link")),
@@ -266,20 +264,20 @@ class RewardsCfg:
 
     # ##################################### task #####################################
     track_lin_vel_exp = RewardTermCfg(
-        func=mdp.track_lin_vel_xy_exp,
+        func=mdp.rew.track_lin_vel_xy_exp,
         weight=1.0,
         params=dict(command_name="base_velocity", tracking_sigma=5)
     )
 
     track_ang_vel_exp = RewardTermCfg(
-        func=mdp.track_ang_vel_z_exp,
+        func=mdp.rew.track_ang_vel_z_exp,
         weight=0.5,
         params=dict(command_name="base_velocity", tracking_sigma=5)
     )
 
     # ##################################### contact #####################################
     feet_slip = RewardTermCfg(
-        func=mdp.feet_slip,
+        func=mdp.rew.feet_slip,
         weight=-0.1,
         params=dict(
             robot_cfg=SceneEntityCfg("robot", body_names=("left_foot_link", "right_foot_link")),
@@ -288,7 +286,7 @@ class RewardsCfg:
     )
 
     foothold = RewardTermCfg(
-        func=mdp.foothold,
+        func=mdp.rew.foothold,
         weight=-0.1,
         params=dict(
             scanner_l_cfg=SceneEntityCfg("left_feet_scanner"),
@@ -299,28 +297,28 @@ class RewardsCfg:
 
     # ##################################### regularization #####################################
     joint_pos_deviation = RewardTermCfg(
-        func=mdp.joint_deviation_l1,
+        func=mdp.rew.joint_deviation_l1,
         weight=-0.04,
         params=dict(asset_cfg=SceneEntityCfg("robot", joint_names=".*")),
     )
 
     joint_yr_pos_deviation = RewardTermCfg(
-        func=mdp.joint_deviation_l1,
+        func=mdp.rew.joint_deviation_l1,
         weight=-0.5,
-        params=dict(asset_cfg=SceneEntityCfg("robot", joint_names=(".*yaw.*", ".*roll.*"))),
+        params=dict(asset_cfg=SceneEntityCfg("robot", joint_names=(".*Yaw", ".*Roll"))),
     )
 
     # base_orientation = RewardTermCfg(func=mdp.flat_orientation_l2, weight=-10.0)
-    lin_vel_z = RewardTermCfg(func=mdp.lin_vel_z_l2, weight=-2.0)
-    ang_vel_xy = RewardTermCfg(func=mdp.ang_vel_xy_l2, weight=-0.05)
+    lin_vel_z = RewardTermCfg(func=mdp.rew.lin_vel_z_l2, weight=-2.0)
+    ang_vel_xy = RewardTermCfg(func=mdp.rew.ang_vel_xy_l2, weight=-0.05)
 
     # ##################################### energy #####################################
-    action_rate = RewardTermCfg(func=mdp.action_rate_l2, weight=-0.01)
-    dof_torques = RewardTermCfg(func=mdp.joint_torques_l2, weight=-1.0e-5)
-    dof_acc = RewardTermCfg(func=mdp.joint_acc_l2, weight=-2.5e-7)
+    action_rate = RewardTermCfg(func=mdp.rew.action_rate_l2, weight=-0.01)
+    dof_torques = RewardTermCfg(func=mdp.rew.joint_torques_l2, weight=-1.0e-5)
+    dof_acc = RewardTermCfg(func=mdp.rew.joint_acc_l2, weight=-2.5e-7)
 
     undesired_contacts = RewardTermCfg(
-        func=mdp.undesired_contacts,
+        func=mdp.rew.undesired_contacts,
         weight=-1.0,
         params=dict(
             sensor_cfg=SceneEntityCfg("contact_forces", body_names="Trunk"),
@@ -333,10 +331,10 @@ class RewardsCfg:
 
 @configclass
 class TerminationsCfg:
-    time_out = TerminationTermCfg(func=mdp.time_out, time_out=True)
+    time_out = TerminationTermCfg(func=mdp.term.time_out, time_out=True)
 
     base_contact = TerminationTermCfg(
-        func=mdp.illegal_contact,
+        func=mdp.term.illegal_contact,
         params=dict(
             sensor_cfg=SceneEntityCfg("contact_forces", body_names="Trunk"),
             threshold=1.0,
@@ -344,7 +342,7 @@ class TerminationsCfg:
     )
 
     orientation_cutoff = TerminationTermCfg(
-        func=mdp.bad_orientation,
+        func=mdp.term.bad_orientation,
         params=dict(
             asset_cfg=SceneEntityCfg("robot", body_names="Trunk"),
             limit_angle=math.pi / 3,
@@ -352,7 +350,7 @@ class TerminationsCfg:
     )
 
     height_cutoff = TerminationTermCfg(
-        func=mdp.root_height_below_minimum,
+        func=mdp.term.root_height_below_minimum,
         params=dict(
             asset_cfg=SceneEntityCfg("robot", body_names="Trunk"),
             minimum_height=-5.,
@@ -364,7 +362,7 @@ class TerminationsCfg:
 class EventCfg:
     # startup
     physics_material = EventTermCfg(
-        func=mdp.randomize_rigid_body_material,
+        func=mdp.evt.randomize_rigid_body_material,
         mode="startup",
         params={
             "asset_cfg": SceneEntityCfg("robot", body_names=".*"),
@@ -376,7 +374,7 @@ class EventCfg:
     )
 
     add_base_mass = EventTermCfg(
-        func=mdp.randomize_rigid_body_mass,
+        func=mdp.evt.randomize_rigid_body_mass,
         mode="startup",
         params={
             "asset_cfg": SceneEntityCfg("robot", body_names="Trunk"),
@@ -386,7 +384,7 @@ class EventCfg:
     )
 
     base_com = EventTermCfg(
-        func=mdp.randomize_rigid_body_com,
+        func=mdp.evt.randomize_rigid_body_com,
         mode="startup",
         params={
             "asset_cfg": SceneEntityCfg("robot", body_names="Trunk"),
@@ -406,7 +404,7 @@ class EventCfg:
     # )
 
     reset_base = EventTermCfg(
-        func=mdp.reset_root_state_uniform,
+        func=mdp.evt.reset_root_state_uniform,
         mode="reset",
         params={
             "pose_range": {"x": (-0.5, 0.5), "y": (-0.5, 0.5), "yaw": (-3.14, 3.14)},
@@ -422,7 +420,7 @@ class EventCfg:
     )
 
     reset_robot_joints = EventTermCfg(
-        func=mdp.reset_joints_by_scale,
+        func=mdp.evt.reset_joints_by_scale,
         mode="reset",
         params={
             "position_range": (0.5, 1.5),
@@ -432,7 +430,7 @@ class EventCfg:
 
     # interval
     push_robot = EventTermCfg(
-        func=mdp.push_by_setting_velocity,
+        func=mdp.evt.push_by_setting_velocity,
         mode="interval",
         interval_range_s=(10.0, 15.0),
         params={"velocity_range": {"x": (-0.5, 0.5), "y": (-0.5, 0.5)}},
@@ -441,8 +439,8 @@ class EventCfg:
 
 @configclass
 class CommandsCfg:
-    base_velocity = mdp.PhaseCommandCfg(
-        base_command_cfg=mdp.UniformVelocityCommandCfg(
+    base_velocity = mdp.cmd.PhaseCommandCfg(
+        base_command_cfg=mdp.cmd.UniformVelocityCommandCfg(
             asset_name="robot",
             resampling_time_range=(5.0, 10.0),
             heading_command=True,
@@ -450,7 +448,7 @@ class CommandsCfg:
             rel_heading_envs=0.5,
             rel_standing_envs=0.02,
             debug_vis=True,
-            ranges=mdp.UniformVelocityCommandCfg.Ranges(
+            ranges=mdp.cmd.UniformVelocityCommandCfg.Ranges(
                 lin_vel_x=(-0.8, 1.2), lin_vel_y=(-0.8, 0.8), ang_vel_z=(-1.0, 1.0), heading=(-math.pi, math.pi)
             ),
         ),
@@ -465,7 +463,7 @@ class CommandsCfg:
 
 
 @configclass
-class T1FlatCfg(ManagerBasedRLEnvCfg):
+class T1FlatEnvCfg(ManagerBasedRLEnvCfg):
     episode_length_s = 20.0
 
     decimation = 10

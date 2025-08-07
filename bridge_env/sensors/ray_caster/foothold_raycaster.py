@@ -72,7 +72,7 @@ class FootholdRayCaster(RayCaster):
 
         # ray cast and store the hits
         # TODO: Make this work for multiple meshes?
-        self.ray_starts_w = ray_starts_w
+        self.ray_starts_w[env_ids] = ray_starts_w
         self._data.ray_hits_w[env_ids] = raycast_mesh(
             ray_starts_w,
             ray_directions_w,

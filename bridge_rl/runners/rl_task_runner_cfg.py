@@ -6,13 +6,15 @@ from typing import TYPE_CHECKING
 from isaaclab.envs import ManagerBasedRLEnvCfg
 from isaaclab.utils import configclass
 
+from bridge_rl.runners.rl_task_runner import RLRunner
+
 if TYPE_CHECKING:
     from bridge_rl.algorithms.ppo import PPOCfg
 
 
 @configclass
-class RLRunnerCfg:
-    task_cfg: ManagerBasedRLEnvCfg = MISSING
+class RLTaskCfg:
+    env_cfg: ManagerBasedRLEnvCfg = MISSING
 
     algorithm_cfg: PPOCfg = MISSING
 
@@ -24,5 +26,7 @@ class RLRunnerCfg:
 
     logger_backend: str = "tensorboard"
 
+    class_type: type = RLRunner
+
     def __post_init__(self):
-        self.task_cfg.observations = self.algorithm_cfg.observation_cfg
+        self.env_cfg.observations = self.algorithm_cfg.observation_cfg

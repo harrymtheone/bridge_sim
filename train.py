@@ -27,21 +27,17 @@ def launch_app():
 
 
 def main(args):
-    from bridge_rl.runners import RLRunner, RLRunnerCfg
-    from tasks.T1 import T1FlatCfg
-    from bridge_rl.algorithms.dreamwaq import DreamWaQCfg
+    from bridge_rl.runners import RLRunner
+    from tasks.T1.tasks import T1FlatDreamWaqTaskCfg
 
-    runner_cfg = RLRunnerCfg(
-        task_cfg=T1FlatCfg(),
-        algorithm_cfg=DreamWaQCfg(noise_std_range=(0.3, 1.0)),
-        max_iterations=10000,
-    )
+    task_cfg = T1FlatDreamWaqTaskCfg()
+    task_cfg.max_iterations = 10000
 
     if args.debug:
-        runner_cfg.task_cfg.scene.num_envs = 64
-        runner_cfg.logger_backend = None
+        task_cfg.env_cfg.scene.num_envs = 64
+        task_cfg.logger_backend = None
 
-    runner = RLRunner(cfg=runner_cfg, args=args)
+    runner = RLRunner(cfg=task_cfg, args=args)
 
     runner.learn()
 

@@ -13,15 +13,15 @@ from torch.utils.tensorboard import SummaryWriter
 from bridge_rl.utils import EpisodeLogger
 
 if TYPE_CHECKING:
-    from . import RLRunnerCfg
+    from . import RLTaskCfg
 
 
 class RLRunner:
-    def __init__(self, cfg: RLRunnerCfg, args: Namespace):
+    def __init__(self, cfg: RLTaskCfg, args: Namespace):
         cfg.validate()
         self.cfg = cfg
 
-        self.env = ManagerBasedRLEnv(cfg=cfg.task_cfg)
+        self.env = ManagerBasedRLEnv(cfg=cfg.env_cfg)
         self.device = args.device
 
         # Create algorithm

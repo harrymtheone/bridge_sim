@@ -1,49 +1,19 @@
-from isaaclab.envs import mdp
+from dataclasses import MISSING
+
 from isaaclab.managers import ObservationGroupCfg, ObservationTermCfg, SceneEntityCfg
 from isaaclab.utils import configclass
-from isaaclab.utils.noise import UniformNoiseCfg
 
+from bridge_env.envs import mdp
 from bridge_rl.algorithms.ppo import PPOCfg
 from . import DreamWaQ
+from ..templates import Proprio, UniversalCriticObs
 
 
 @configclass
 class DreamWaQObservationsCfg:
-    @configclass
-    class Proprio(ObservationGroupCfg):
-        base_ang_vel = ObservationTermCfg(func=mdp.base_ang_vel, noise=UniformNoiseCfg(n_min=-0.2, n_max=0.2))
+    proprio: Proprio = Proprio(enable_corruption=True)
 
-        projected_gravity = ObservationTermCfg(func=mdp.projected_gravity, noise=UniformNoiseCfg(n_min=-0.05, n_max=0.05))
-
-        commands = ObservationTermCfg(func=mdp.generated_commands, params={"command_name": "base_velocity"})
-
-        joint_pos = ObservationTermCfg(func=mdp.joint_pos_rel, noise=UniformNoiseCfg(n_min=-0.01, n_max=0.01))
-
-        joint_vel = ObservationTermCfg(func=mdp.joint_vel_rel, noise=UniformNoiseCfg(n_min=-1.5, n_max=1.5))
-
-        last_action = ObservationTermCfg(func=mdp.last_action)
-
-    proprio: Proprio = Proprio(
-        enable_corruption=True
-    )
-
-    @configclass
-    class CriticObs(ObservationGroupCfg):
-        commands = ObservationTermCfg(func=mdp.generated_commands, params={"command_name": "base_velocity"})
-
-        joint_pos = ObservationTermCfg(func=mdp.joint_pos_rel)
-
-        joint_vel = ObservationTermCfg(func=mdp.joint_vel_rel)
-
-        last_action = ObservationTermCfg(func=mdp.last_action)
-
-        base_lin_vel = ObservationTermCfg(func=mdp.base_lin_vel)
-
-        base_ang_vel = ObservationTermCfg(func=mdp.base_ang_vel)
-
-        projected_gravity = ObservationTermCfg(func=mdp.projected_gravity)
-
-    critic_obs: CriticObs = CriticObs(
+    critic_obs: UniversalCriticObs = UniversalCriticObs(
         enable_corruption=True,
         history_length=50,
         flatten_history_dim=False,
@@ -51,7 +21,7 @@ class DreamWaQObservationsCfg:
 
     @configclass
     class Scan(ObservationGroupCfg):
-        scan = ObservationTermCfg(func=mdp.height_scan, params={"sensor_cfg": SceneEntityCfg(name="scan_scanner"), "offset": 0.7})
+        scan = ObservationTermCfg(func=mdp.obs.height_scan, params=MISSING)
 
     scan: Scan = Scan()
 

@@ -1,3 +1,3 @@
-from .rl_runner import RLRunner
+from .rl_task_runner import RLRunner
 
-from .rl_runner_cfg import RLRunnerCfg
+from .rl_task_runner_cfg import RLTaskCfg
