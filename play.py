@@ -26,11 +26,11 @@ def launch_app():
 
 
 def main(args):
-    from tasks.T1.tasks import T1FlatDreamWaqTaskCfg
+    from tasks.T1.tasks import T1ParkourDreamWaqTaskCfg
 
     args.resume = True
 
-    task_cfg = T1FlatDreamWaqTaskCfg()
+    task_cfg = T1ParkourDreamWaqTaskCfg()
     task_cfg.env_cfg.scene.num_envs = 4
     task_cfg.env_cfg.sim.device = args.device
     task_cfg.logger_backend = None

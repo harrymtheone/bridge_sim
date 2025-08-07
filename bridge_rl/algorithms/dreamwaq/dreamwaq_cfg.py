@@ -1,6 +1,6 @@
 from dataclasses import MISSING
 
-from isaaclab.managers import ObservationGroupCfg, ObservationTermCfg, SceneEntityCfg
+from isaaclab.managers import ObservationGroupCfg, ObservationTermCfg
 from isaaclab.utils import configclass
 
 from bridge_env.envs import mdp
@@ -11,6 +11,10 @@ from ..templates import Proprio, UniversalCriticObs
 
 @configclass
 class DreamWaQObservationsCfg:
+    @configclass
+    class Scan(ObservationGroupCfg):
+        scan = ObservationTermCfg(func=mdp.obs.height_scan, params=MISSING)
+
     proprio: Proprio = Proprio(enable_corruption=True)
 
     critic_obs: UniversalCriticObs = UniversalCriticObs(
@@ -18,10 +22,6 @@ class DreamWaQObservationsCfg:
         history_length=50,
         flatten_history_dim=False,
     )
-
-    @configclass
-    class Scan(ObservationGroupCfg):
-        scan = ObservationTermCfg(func=mdp.obs.height_scan, params=MISSING)
 
     scan: Scan = Scan()
 

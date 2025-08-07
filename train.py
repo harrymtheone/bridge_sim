@@ -28,9 +28,9 @@ def launch_app():
 
 def main(args):
     from bridge_rl.runners import RLRunner
-    from tasks.T1.tasks import T1FlatDreamWaqTaskCfg
+    from tasks.T1.tasks import T1ParkourDreamWaqTaskCfg
 
-    task_cfg = T1FlatDreamWaqTaskCfg()
+    task_cfg = T1ParkourDreamWaqTaskCfg()
     task_cfg.max_iterations = 10000
 
     if args.debug:
