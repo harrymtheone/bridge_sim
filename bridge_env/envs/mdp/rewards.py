@@ -5,8 +5,9 @@ from isaaclab.assets import RigidObject, Articulation
 from isaaclab.envs import ManagerBasedRLEnv
 from isaaclab.managers import SceneEntityCfg
 from isaaclab.sensors import ContactSensor
+from isaaclab.utils.math import euler_xyz_from_quat
 
-from bridge_env.mdp.commands.phase_command import PhaseCommand
+from bridge_env.envs.mdp.commands.phase_command import PhaseCommand
 from bridge_env.sensors.ray_caster import FootholdRayCaster
 
 """
@@ -42,7 +43,7 @@ def track_ang_vel_z_exp(
 
 
 """
-Reference gait tracking rewards.
+gait rewards.
 """
 
 
@@ -68,17 +69,16 @@ def track_ref_dof_pos_T1(
     clock = torch.sin(torch.pi * phase_swing)
 
     # left motion
-    ref_dof_pos[:, 1] = -clock[:, 0] * scale_1
-    ref_dof_pos[:, 7] = clock[:, 0] * scale_2
-    ref_dof_pos[:, 9] = -clock[:, 0] * scale_1
-
+    j_ids = robot_cfg.joint_ids
+    ref_dof_pos[:, j_ids[0]] = -clock[:, 0] * scale_1
+    ref_dof_pos[:, j_ids[1]] = clock[:, 0] * scale_2
+    ref_dof_pos[:, j_ids[2]] = -clock[:, 0] * scale_1
     # right motion
-    ref_dof_pos[:, 2] = -clock[:, 1] * scale_1
-    ref_dof_pos[:, 8] = clock[:, 1] * scale_2
-    ref_dof_pos[:, 10] = -clock[:, 1] * scale_1
+    ref_dof_pos[:, j_ids[3]] = -clock[:, 1] * scale_1
+    ref_dof_pos[:, j_ids[4]] = clock[:, 1] * scale_2
+    ref_dof_pos[:, j_ids[5]] = -clock[:, 1] * scale_1
 
     ref_dof_pos[:] += robot.data.default_joint_pos
-
     diff = torch.norm(ref_dof_pos - robot.data.joint_pos, dim=1)
     return torch.exp(-diff * tracking_sigma) - 0.2 * diff.clamp(0., 0.5)
 
@@ -149,6 +149,50 @@ def feet_air_time(
     # no reward for zero command
     reward *= ~env.command_manager.get_term(command_name).is_standing_env
     return reward
+
+
+def link_distance_xy(
+        env: ManagerBasedRLEnv,
+        robot_cfg: SceneEntityCfg,
+        target_distance_range: tuple[float, float],
+) -> torch.Tensor:
+    robot: Articulation = env.scene[robot_cfg.name]
+
+    feet_pos_xy = robot.data.body_link_pos_w[:, robot_cfg.body_ids, :2]
+    feet_dist_xy = torch.norm(feet_pos_xy[:, 0] - feet_pos_xy[:, 1], dim=1)
+    penalty_min = torch.clamp(target_distance_range[0] - feet_dist_xy, 0., 0.5)
+    penalty_max = torch.clamp(feet_dist_xy - target_distance_range[1], 0., 0.5)
+    return penalty_min + penalty_max
+
+
+def link_orientation_euler(
+        env: ManagerBasedRLEnv,
+        robot_cfg: SceneEntityCfg,
+) -> torch.Tensor:
+    robot: Articulation = env.scene[robot_cfg.name]
+
+    num_links = len(robot_cfg.body_ids)
+    link_quat = robot.data.body_link_quat_w[:, robot_cfg.body_ids]
+    link_euler_xyz = euler_xyz_from_quat(link_quat.flatten(0, 1))
+    link_euler_xy = torch.stack(link_euler_xyz[:2], dim=1).unflatten(0, (-1, num_links))
+    return link_euler_xy.square().sum(dim=[1, 2])
+
+
+def feet_slip(
+        env: ManagerBasedRLEnv,
+        robot_cfg: SceneEntityCfg,
+        contact_sensor_cfg: SceneEntityCfg,
+        contact_force_threshold: float = 5.0,
+) -> torch.Tensor:
+    robot: Articulation = env.scene[robot_cfg.name]
+    contact_sensor: ContactSensor = env.scene.sensors[contact_sensor_cfg.name]
+
+    net_contact_forces = contact_sensor.data.net_forces_w_history
+    is_contact = torch.max(torch.norm(net_contact_forces[:, :, robot_cfg.body_ids], dim=-1), dim=1)[0] > contact_force_threshold
+
+    feet_lin_vel = torch.norm(robot.data.body_lin_vel_w[:, robot_cfg.body_ids, :2], dim=2)
+    feet_ang_vel = torch.abs(robot.data.body_ang_vel_w[:, robot_cfg.body_ids, 2])
+    return torch.sum(is_contact * (feet_lin_vel + feet_ang_vel), dim=1)
 
 
 def foothold(

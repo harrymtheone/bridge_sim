@@ -10,7 +10,6 @@ import torch
 from isaaclab.envs import ManagerBasedRLEnv
 from torch.utils.tensorboard import SummaryWriter
 
-from bridge_env.mdp import PhaseCommand
 from bridge_rl.utils import EpisodeLogger
 
 if TYPE_CHECKING:
