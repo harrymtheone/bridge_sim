@@ -31,7 +31,7 @@ def main(args):
     from tasks import all_tasks
 
     task_cfg = all_tasks[args.task]()
-    task_cfg.max_iterations = 10000
+    task_cfg.max_iterations = 3000
 
     if args.debug:
         task_cfg.env_cfg.scene.num_envs = 64

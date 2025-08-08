@@ -154,6 +154,7 @@ class T1SceneCfg(InteractiveSceneCfg):
             size=(1.6, 0.8),
         ),
         offset=RayCasterCfg.OffsetCfg(pos=(0.3, 0., 0.)),
+        max_distance=2.0,
         ray_alignment="yaw",
         update_period=0.0,
         history_length=0,

@@ -22,7 +22,7 @@ class Depth(ObservationGroupCfg):
 
 @configclass
 class Scan(ObservationGroupCfg):
-    scan = ObservationTermCfg(func=mdp.obs.height_scan, params=MISSING, noise=GaussianNoiseCfg(mean=0., std=0.05))
+    scan = ObservationTermCfg(func=mdp.obs.height_scan_1d, params=MISSING, noise=GaussianNoiseCfg(mean=0., std=0.05))
 
 
 @configclass
