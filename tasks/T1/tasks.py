@@ -1,7 +1,7 @@
 from isaaclab.managers import SceneEntityCfg
 from isaaclab.utils import configclass
 
-from bridge_rl.algorithms.dreamwaq import DreamWaQCfg
+from bridge_rl.algorithms import DreamWaQCfg
 from bridge_rl.runners import RLTaskCfg
 from . import T1FlatEnvCfg, T1ParkourEnvCfg
 

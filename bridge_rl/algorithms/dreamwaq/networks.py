@@ -8,8 +8,7 @@ import torch
 import torch.nn as nn
 from torch.distributions import Normal
 
-from bridge_rl.algorithms.ppo import BaseActor, BaseRecurrentActor, BaseCritic
-from bridge_rl.algorithms.utils import make_linear_layers, recurrent_wrapper
+from bridge_rl.algorithms import make_linear_layers, recurrent_wrapper, BaseActor, BaseRecurrentActor, BaseCritic
 
 
 class VAE(nn.Module):

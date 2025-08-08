@@ -4,7 +4,7 @@ from isaaclab.managers import ObservationGroupCfg, ObservationTermCfg
 from isaaclab.utils import configclass
 
 from bridge_env.envs import mdp
-from bridge_rl.algorithms.ppo import PPOCfg
+from bridge_rl.algorithms import PPOCfg
 from . import DreamWaQ
 from ..templates import Proprio, UniversalCriticObs
 

@@ -9,7 +9,7 @@ from isaaclab.utils import configclass
 from bridge_rl.runners.rl_task_runner import RLRunner
 
 if TYPE_CHECKING:
-    from bridge_rl.algorithms.ppo import PPOCfg
+    from bridge_rl.algorithms import PPOCfg
 
 
 @configclass

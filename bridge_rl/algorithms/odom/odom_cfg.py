@@ -5,7 +5,7 @@ from isaaclab.utils import configclass
 from isaaclab.utils.noise import GaussianNoiseCfg
 
 from bridge_env.envs import mdp
-from bridge_rl.algorithms.templates import Proprio, UniversalCriticObs
+from bridge_rl.algorithms import Proprio, UniversalCriticObs
 
 
 @configclass

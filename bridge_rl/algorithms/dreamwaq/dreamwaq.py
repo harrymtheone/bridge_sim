@@ -6,7 +6,7 @@ import torch
 import torch.optim as optim
 from isaaclab.envs import ManagerBasedRLEnv
 
-from bridge_rl.algorithms.ppo import PPO
+from bridge_rl.algorithms import PPO
 from bridge_rl.storage import RolloutStorage
 from .networks import DreamWaQActor, DreamWaQRecurrentActor, DreamWaQCritic
 
