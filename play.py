@@ -32,9 +32,11 @@ def main(args):
 
     task_cfg = T1ParkourDreamWaqTaskCfg()
     task_cfg.env_cfg.scene.num_envs = 4
+    task_cfg.env_cfg.scene.ground.terrain_generator.num_rows = 4
+    task_cfg.env_cfg.scene.ground.terrain_generator.num_cols = 4
+
     task_cfg.env_cfg.sim.device = args.device
     task_cfg.logger_backend = None
-
     runner = task_cfg.class_type(task_cfg, args)
     runner.play()
 

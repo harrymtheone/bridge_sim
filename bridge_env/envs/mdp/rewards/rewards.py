@@ -1,6 +1,10 @@
 from __future__ import annotations
 
-from isaaclab.envs.mdp.rewards import *
+import torch
+from isaaclab.assets import Articulation, RigidObject
+from isaaclab.envs import ManagerBasedRLEnv
+from isaaclab.managers import SceneEntityCfg
+from isaaclab.sensors import ContactSensor
 from isaaclab.utils.math import euler_xyz_from_quat
 
 from bridge_env.envs.mdp.commands.phase_command import PhaseCommand
@@ -130,11 +134,11 @@ def feet_air_time(
 ) -> torch.Tensor:
     """Reward long steps taken by the feet using L2-kernel.
 
-    This function rewards the agent for taking steps that are longer than a threshold. This helps ensure
+    This function rewards the agent for taking steps that are longer than actions threshold. This helps ensure
     that the robot lifts its feet off the ground and takes steps. The reward is computed as the sum of
     the time for which the feet are in the air.
 
-    If the commands are small (i.e. the agent is not supposed to take a step), then the reward is zero.
+    If the commands are small (i.e. the agent is not supposed to take actions step), then the reward is zero.
     """
     # extract the used quantities (to enable type-hinting)
     contact_sensor: ContactSensor = env.scene.sensors[sensor_cfg.name]

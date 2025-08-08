@@ -28,7 +28,7 @@ def recurrent_wrapper(func: callable,
         seq_batch = next(iter(obs.values())).shape[:2]
         rtn = func({k: v.flatten(0, 1) for k, v in obs.items()}, **kwargs)
     else:
-        raise TypeError('obs must be a torch.Tensor or a dict!')
+        raise TypeError('obs must be actions torch.Tensor or actions dict!')
 
     if type(rtn) is tuple:
         return [r.unflatten(0, seq_batch) for r in rtn]

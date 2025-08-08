@@ -47,7 +47,7 @@ class FootholdRayCaster(RayCaster):
         # check if user provided attach_yaw_only flag
         if self.cfg.attach_yaw_only is not None:
             msg = (
-                "Raycaster attribute 'attach_yaw_only' property will be deprecated in a future release."
+                "Raycaster attribute 'attach_yaw_only' property will be deprecated in actions future release."
                 " Please use the parameter 'ray_alignment' instead."
             )
             # set ray alignment to yaw

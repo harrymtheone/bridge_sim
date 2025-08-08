@@ -3,7 +3,7 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""This script demonstrates how to use the interactive scene interface to setup a scene with multiple prims.
+"""This script demonstrates how to use the interactive scene interface to setup actions scene with multiple prims.
 
 .. code-block:: bash
 
@@ -49,7 +49,7 @@ from isaaclab_assets import CARTPOLE_CFG  # isort:skip
 
 @configclass
 class CartpoleSceneCfg(InteractiveSceneCfg):
-    """Configuration for a cart-pole scene."""
+    """Configuration for actions cart-pole scene."""
 
     # ground plane
     ground = AssetBaseCfg(prim_path="/World/defaultGroundPlane", spawn=sim_utils.GroundPlaneCfg())

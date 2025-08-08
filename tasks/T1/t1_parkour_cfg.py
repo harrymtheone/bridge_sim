@@ -1,7 +1,7 @@
-from isaaclab.envs import ManagerBasedRLEnvCfg
-from isaaclab.managers import SceneEntityCfg, RewardTermCfg
-from isaaclab.sim import SimulationCfg
 from isaaclab import terrains
+from isaaclab.envs import ManagerBasedRLEnvCfg
+from isaaclab.managers import SceneEntityCfg, RewardTermCfg, CurriculumTermCfg
+from isaaclab.sim import SimulationCfg
 from isaaclab.utils import configclass
 
 from bridge_env.envs import mdp
@@ -129,7 +129,7 @@ class RewardsCfg:
         params=dict(asset_cfg=SceneEntityCfg("robot", joint_names=(".*Yaw", ".*Roll"))),
     )
 
-    # base_orientation = RewardTermCfg(func=mdp.flat_orientation_l2, weight=-10.0)
+    base_orientation = RewardTermCfg(func=mdp.rew.flat_orientation_l2, weight=-10.0)
     lin_vel_z = RewardTermCfg(func=mdp.rew.lin_vel_z_l2, weight=-2.0)
     ang_vel_xy = RewardTermCfg(func=mdp.rew.ang_vel_xy_l2, weight=-0.05)
 
@@ -151,6 +151,11 @@ class RewardsCfg:
 
 
 @configclass
+class CurriculumCfg:
+    terrain_levels = CurriculumTermCfg(func=mdp.curr.terrain_levels_vel)
+
+
+@configclass
 class T1ParkourEnvCfg(ManagerBasedRLEnvCfg):
     episode_length_s = 20.0
 
@@ -168,24 +173,27 @@ class T1ParkourEnvCfg(ManagerBasedRLEnvCfg):
                 size=(8, 8),
                 border_width=8.,
                 border_height=0.,
-                num_rows=4,
-                num_cols=4,
+                num_rows=8,
+                num_cols=8,
                 horizontal_scale=0.1,
                 vertical_scale=0.005,
                 slope_threshold=0.75,
                 sub_terrains={
+                    'plane': terrains.MeshPlaneTerrainCfg(
+                        proportion=0.5,
+                    ),
                     'stairs_up': terrains.MeshPyramidStairsTerrainCfg(
-                        proportion=0.1,
+                        proportion=0.25,
                         border_width=0.5,
-                        step_height_range=(0.1, 0.2),
-                        step_width=0.2,
+                        step_height_range=(0.05, 0.13),
+                        step_width=0.25,
                         platform_width=2,
                     ),
                     'stairs_down': terrains.MeshInvertedPyramidStairsTerrainCfg(
-                        proportion=0.1,
+                        proportion=0.25,
                         border_width=0.5,
-                        step_height_range=(0.1, 0.2),
-                        step_width=0.2,
+                        step_height_range=(0.05, 0.13),
+                        step_width=0.25,
                         platform_width=2,
                     ),
                 },
@@ -193,7 +201,7 @@ class T1ParkourEnvCfg(ManagerBasedRLEnvCfg):
         )
     )
 
-    curriculum = None
+    curriculum = CurriculumCfg()
 
     events = EventCfg()
 
@@ -204,3 +212,6 @@ class T1ParkourEnvCfg(ManagerBasedRLEnvCfg):
     rewards = RewardsCfg()
 
     terminations = TerminationsCfg()
+
+    def __post_init__(self):
+        self.commands.base_velocity.base_command_cfg.rel_heading_envs = 1.0

@@ -13,7 +13,7 @@ from . import grid_pattern
 class GridPatternV2Cfg(PatternBaseCfg):
     """Configuration for the grid pattern for ray-casting.
 
-    Defines a 2D grid of rays in the coordinates of the sensor.
+    Defines actions 2D grid of rays in the coordinates of the sensor.
 
     .. attention::
         The points are ordered based on the :attr:`ordering` attribute.
@@ -34,7 +34,7 @@ class GridPatternV2Cfg(PatternBaseCfg):
     ordering: Literal["xy", "yx"] = "xy"
     """Specifies the ordering of points in the generated grid. Defaults to ``"xy"``.
 
-    Consider a grid pattern with points at :math:`(x, y)` where :math:`x` and :math:`y` are the grid indices.
+    Consider actions grid pattern with points at :math:`(x, y)` where :math:`x` and :math:`y` are the grid indices.
     The ordering of the points can be specified as "xy" or "yx". This determines the inner and outer loop order
     when iterating over the grid points.
 

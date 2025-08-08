@@ -126,7 +126,7 @@ class T1ArticulationCfg(ArticulationCfg):
 
 @configclass
 class T1SceneCfg(InteractiveSceneCfg):
-    """Configuration for a T1 scene."""
+    """Configuration for actions T1 scene."""
 
     # ground plane
     ground: AssetBaseCfg | TerrainImporterCfg = MISSING

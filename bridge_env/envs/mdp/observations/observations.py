@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import torch
-from isaaclab.envs.mdp.observations import *
 from isaaclab.sensors import ContactSensor
 
 from bridge_env.sensors.ray_caster import FootholdRayCaster
