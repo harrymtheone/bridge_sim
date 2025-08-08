@@ -26,11 +26,10 @@ def launch_app():
 
 
 def main(args):
-    from tasks.T1.tasks import T1ParkourDreamWaqTaskCfg
-
+    from tasks import all_tasks
     args.resume = True
 
-    task_cfg = T1ParkourDreamWaqTaskCfg()
+    task_cfg = all_tasks[args.task]()
     task_cfg.env_cfg.scene.num_envs = 4
     task_cfg.env_cfg.scene.ground.terrain_generator.num_rows = 4
     task_cfg.env_cfg.scene.ground.terrain_generator.num_cols = 4

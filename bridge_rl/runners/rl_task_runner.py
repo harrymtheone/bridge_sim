@@ -50,7 +50,9 @@ class RLRunner:
             start_time = time.time()
 
             with torch.inference_mode():
-                for _ in range(self.cfg.num_steps_per_env):
+                for _ in range(self.cfg.num_steps_per_update):
+                    observations['use_estimated_values'] = torch.zeros(self.env.num_envs, dtype=torch.bool, device=self.device)  # TODO: not finished here?!
+
                     actions = self.algorithm.act(observations)
                     observations, rewards, terminated, timeouts, infos = self.env.step(actions)
 
@@ -125,7 +127,7 @@ class RLRunner:
 
     def log(self, infos, update_infos, width=80, pad=35):
         # Update total step count and time
-        self.tot_steps += self.cfg.num_steps_per_env * self.env.num_envs
+        self.tot_steps += self.cfg.num_steps_per_update * self.env.num_envs
         iteration_time = self.collection_time + self.learn_time
         self.tot_time += iteration_time
 
@@ -146,7 +148,7 @@ class RLRunner:
 
         # Print progress information
         progress = f" \033[1m Learning iteration {self.cur_it}/{self.start_it + self.cfg.max_iterations} \033[0m "
-        fps = int(self.cfg.num_steps_per_env * self.env.num_envs / iteration_time)
+        fps = int(self.cfg.num_steps_per_update * self.env.num_envs / iteration_time)
         curr_it = self.cur_it - self.start_it
         eta = self.tot_time / (curr_it + 1) * (self.cfg.max_iterations - curr_it)
 
@@ -168,6 +170,8 @@ class RLRunner:
         observations, infos = self.env.reset()
         with torch.inference_mode():
             while True:
+                observations['use_estimated_values'] = torch.zeros(self.env.num_envs, dtype=torch.bool, device=self.device)  # TODO: not finished here?!
+
                 rtn = self.algorithm.play_act(observations)
 
                 actions = rtn['actions']

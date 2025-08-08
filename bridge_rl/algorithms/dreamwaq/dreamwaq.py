@@ -6,9 +6,9 @@ import torch
 import torch.optim as optim
 from isaaclab.envs import ManagerBasedRLEnv
 
-from bridge_rl.algorithms import PPO
+from bridge_rl.algorithms import PPO, PPOCritic
 from bridge_rl.storage import RolloutStorage
-from .networks import DreamWaQActor, DreamWaQRecurrentActor, DreamWaQCritic
+from .networks import DreamWaQActor, DreamWaQRecurrentActor
 
 if TYPE_CHECKING:
     from . import DreamWaQCfg
@@ -58,10 +58,10 @@ class DreamWaQ(PPO):
         critic_obs_shape = self.env.observation_manager.group_obs_dim['critic_obs']
         scan_shape = self.env.observation_manager.group_obs_dim['scan']
 
-        self.critic = DreamWaQCritic(
-            critic_obs_shape=critic_obs_shape,  # This should be set in config
-            scan_shape=scan_shape,  # This should be set in config
-            hidden_dims=self.cfg.critic_hidden_dims
+        self.critic = PPOCritic(
+            critic_obs_shape=critic_obs_shape,
+            scan_shape=scan_shape,
+            critic_hidden_dims=self.cfg.critic_hidden_dims
         ).to(self.device)
 
         # Initialize DreamWaQ optimizer
@@ -72,7 +72,7 @@ class DreamWaQ(PPO):
         self.storage = RolloutStorage(
             obs_shape=self.env.observation_manager.group_obs_dim,
             num_actions=action_size,
-            storage_length=24,
+            storage_length=self.cfg.num_steps_per_update,
             num_envs=self.env.num_envs,
             device=self.device
         )
@@ -83,9 +83,6 @@ class DreamWaQ(PPO):
 
     def _generate_actions(self, observations, **kwargs):
         return self.actor.act(observations, **kwargs)
-
-    def _store_transition_data(self, actions, values, **kwargs):
-        super()._store_transition_data(actions, values, **kwargs)
 
     def process_env_step(self, rewards, terminated, timeouts, infos, **kwargs):
         if self.actor.is_recurrent:

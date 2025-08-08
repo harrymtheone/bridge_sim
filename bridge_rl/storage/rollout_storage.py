@@ -57,8 +57,10 @@ class ObsTransBuf:
 
     def set(self, idx, obs):
         for n, v in obs.items():
-            assert n in self.storage
-            self.storage[n][idx] = v.clone()
+            if n not in self.storage:
+                self.storage[n] = torch.zeros(self.buf_length, *v.shape, dtype=v.dtype, device=self.device)
+
+            self.storage[n][idx] = v
 
     def flatten_get(self, idx):
         raise NotImplementedError
@@ -71,7 +73,7 @@ class ObsTransBuf:
 
 class RolloutStorage:
     def __init__(self,
-                 obs_shape: dict[str, int | tuple[int, ...]],
+                 obs_shape: dict[str, tuple[int, ...]],
                  num_actions: int,
                  storage_length,
                  num_envs,

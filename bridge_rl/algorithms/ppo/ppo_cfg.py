@@ -39,3 +39,6 @@ class PPOCfg:
 
     # Gradient clipping
     max_grad_norm: float | None = 1.0
+
+    num_steps_per_update: int = MISSING
+    """ Note: this values automatically filled by runner cfg """

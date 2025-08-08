@@ -41,7 +41,7 @@ class DreamWaQCfg(PPOCfg):
     encoder_output_size: int = 67  # 3 (velocity) + 64 (latent)
 
     # Actor/Critic network parameters
-    actor_hidden_dims: tuple = (256, 128, 64)
+    actor_hidden_dims: tuple = (512, 256, 128)
     critic_hidden_dims: tuple = (512, 256, 128)
 
     # DreamWAQ specific parameters

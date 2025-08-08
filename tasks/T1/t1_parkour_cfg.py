@@ -13,7 +13,7 @@ class RewardsCfg:
     # ##################################### gait #####################################
     track_ref_joint_pos = RewardTermCfg(
         func=mdp.rew.track_ref_dof_pos_T1,
-        weight=2.0,
+        weight=0.6,
         params=dict(
             command_name='base_velocity',
             ref_motion_scale=0.3,
@@ -30,7 +30,7 @@ class RewardsCfg:
 
     contact_accordance = RewardTermCfg(
         func=mdp.rew.feet_contact_accordance,
-        weight=1.2,
+        weight=0.3,
         params=dict(
             command_name='base_velocity',
             contact_sensor_cfg=SceneEntityCfg("contact_forces", body_names=".*foot.*"),
@@ -39,7 +39,7 @@ class RewardsCfg:
 
     feet_clearance = RewardTermCfg(
         func=mdp.rew.feet_clearance_masked,
-        weight=0.6,
+        weight=0.5,
         params=dict(
             command_name="base_velocity",
             sensor_l_cfg=SceneEntityCfg("left_feet_scanner"),
@@ -86,13 +86,13 @@ class RewardsCfg:
     # ##################################### task #####################################
     track_lin_vel_exp = RewardTermCfg(
         func=mdp.rew.track_lin_vel_xy_exp,
-        weight=1.0,
+        weight=1.5,
         params=dict(command_name="base_velocity", tracking_sigma=5)
     )
 
     track_ang_vel_exp = RewardTermCfg(
         func=mdp.rew.track_ang_vel_z_exp,
-        weight=0.5,
+        weight=1.,
         params=dict(command_name="base_velocity", tracking_sigma=5)
     )
 
@@ -166,6 +166,7 @@ class T1ParkourEnvCfg(ManagerBasedRLEnvCfg):
     scene = T1SceneCfg(
         num_envs=4096,
         env_spacing=2.0,
+
         ground=terrains.TerrainImporterCfg(
             prim_path="/World/defaultGroundPlane",
             terrain_generator=terrains.TerrainGeneratorCfg(
@@ -173,8 +174,8 @@ class T1ParkourEnvCfg(ManagerBasedRLEnvCfg):
                 size=(8, 8),
                 border_width=8.,
                 border_height=0.,
-                num_rows=8,
-                num_cols=8,
+                num_rows=20,
+                num_cols=20,
                 horizontal_scale=0.1,
                 vertical_scale=0.005,
                 slope_threshold=0.75,

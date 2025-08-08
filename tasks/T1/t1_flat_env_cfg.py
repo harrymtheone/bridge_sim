@@ -1,4 +1,4 @@
-import isaaclab.sim as sim_utils
+from isaaclab import sim as sim_utils
 from isaaclab.assets import AssetBaseCfg
 from isaaclab.envs import ManagerBasedRLEnvCfg
 from isaaclab.managers import SceneEntityCfg, RewardTermCfg

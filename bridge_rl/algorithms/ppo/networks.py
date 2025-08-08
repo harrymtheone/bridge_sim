@@ -7,6 +7,8 @@ import torch
 import torch.nn as nn
 from torch.distributions import Distribution, Normal
 
+from bridge_rl.algorithms import make_linear_layers, recurrent_wrapper
+
 
 class BaseActor(nn.Module):
     is_recurrent: bool
@@ -99,8 +101,10 @@ class BaseRecurrentActor(BaseActor):
 
     def __init__(self, action_size: int):
         super().__init__(action_size)
-        # Hidden states (set by subclasses)
         self.hidden_states: Optional[torch.Tensor] = None
+
+    def init_hidden_states(self, num_envs: int, device: torch.device) -> None:
+        raise NotImplementedError
 
     def get_hidden_states(self) -> Optional[torch.Tensor]:
         """Get current hidden states.
@@ -109,7 +113,7 @@ class BaseRecurrentActor(BaseActor):
             Hidden states tensor or None if not initialized
         """
         if self.hidden_states is None:
-            return None
+            raise RuntimeError("Hidden states not initialized")
         return self.hidden_states.detach()
 
     def reset(self, dones: torch.Tensor) -> None:
@@ -147,3 +151,52 @@ class BaseCritic(nn.Module):
             State values tensor
         """
         raise NotImplementedError("Subclasses must implement evaluate method")
+
+
+class PPOCritic(BaseCritic):
+    def __init__(self,
+                 critic_obs_shape: tuple[int, int],
+                 scan_shape: tuple[int, ...],
+                 critic_hidden_dims: tuple[int, ...] = (512, 256, 128)):
+        super().__init__()
+
+        activation = nn.ELU()
+
+        if len(critic_obs_shape) in (1, 2):
+            critic_obs_size = critic_obs_shape[-1]
+        else:
+            raise ValueError(f'critic_obs_shape {critic_obs_shape} is not valid!')
+
+        # Proprioceptive history encoder
+        self.priv_enc = nn.Sequential(
+            nn.Conv1d(in_channels=critic_obs_size, out_channels=64, kernel_size=6, stride=4),
+            activation,
+            nn.Conv1d(in_channels=64, out_channels=128, kernel_size=6, stride=2),
+            activation,
+            nn.Conv1d(in_channels=128, out_channels=128, kernel_size=4, stride=1),
+            activation,
+            nn.Flatten()
+        )
+
+        # Scan encoder
+        scan_size = math.prod(scan_shape)
+        self.scan_enc = make_linear_layers(scan_size, 256, 64, activation_func=activation)
+
+        # Value function network
+        self.critic = make_linear_layers(
+            128 + 64,
+            *critic_hidden_dims,
+            1,
+            activation_func=activation,
+            output_activation=False
+        )
+
+    def evaluate(self, obs: dict[str, torch.Tensor], **kwargs) -> torch.Tensor:
+
+        if obs['critic_obs'].ndim == 3:
+            # Non-recurrent case
+            priv_latent = self.priv_enc(obs['critic_obs'].transpose(1, 2))
+            scan_enc = self.scan_enc(obs['scan'].flatten(1))
+            return self.critic(torch.cat([priv_latent, scan_enc], dim=1))
+        else:
+            return recurrent_wrapper(self.evaluate, obs)

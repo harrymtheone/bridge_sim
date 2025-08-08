@@ -1,14 +1,12 @@
 from __future__ import annotations
 
-import functools
-import operator
 from typing import Optional, Tuple
 
 import torch
 import torch.nn as nn
 from torch.distributions import Normal
 
-from bridge_rl.algorithms import make_linear_layers, recurrent_wrapper, BaseActor, BaseRecurrentActor, BaseCritic
+from bridge_rl.algorithms import make_linear_layers, recurrent_wrapper, BaseActor, BaseRecurrentActor
 
 
 class VAE(nn.Module):
@@ -143,13 +141,15 @@ class DreamWaQActor(BaseActor):
 class DreamWaQRecurrentActor(BaseRecurrentActor):
     is_recurrent = True
 
-    def __init__(self,
-                 prop_shape: tuple[int, ...],
-                 num_gru_layers: int,
-                 gru_hidden_size: int,
-                 actor_hidden_dims: Tuple[int, ...],
-                 encoder_output_size: int,
-                 action_size: int):
+    def __init__(
+            self,
+            prop_shape: tuple[int, ...],
+            num_gru_layers: int,
+            gru_hidden_size: int,
+            actor_hidden_dims: Tuple[int, ...],
+            encoder_output_size: int,
+            action_size: int
+    ):
         super().__init__(action_size)
 
         self.activation = nn.ELU()
@@ -227,52 +227,3 @@ class DreamWaQRecurrentActor(BaseRecurrentActor):
         obs_enc, _ = self.gru(obs.proprio, hidden_states)
         ot1, est_mu, est_logvar = recurrent_wrapper(self.vae.forward, obs_enc, mu_only=False)
         return ot1, est_mu[..., :3], est_mu, est_logvar
-
-
-class DreamWaQCritic(BaseCritic):
-    def __init__(self,
-                 critic_obs_shape: tuple[int, int],
-                 scan_shape: tuple[int, ...],
-                 hidden_dims: Tuple[int, ...] = (512, 256, 128)):
-        super().__init__()
-
-        activation = nn.ELU()
-
-        if len(critic_obs_shape) in (1, 2):
-            critic_obs_size = critic_obs_shape[-1]
-        else:
-            raise ValueError(f'critic_obs_shape {critic_obs_shape} is not valid!')
-
-        # Proprioceptive history encoder
-        self.priv_enc = nn.Sequential(
-            nn.Conv1d(in_channels=critic_obs_size, out_channels=64, kernel_size=6, stride=4),
-            activation,
-            nn.Conv1d(in_channels=64, out_channels=128, kernel_size=6, stride=2),
-            activation,
-            nn.Conv1d(in_channels=128, out_channels=128, kernel_size=4, stride=1),
-            activation,
-            nn.Flatten()
-        )
-
-        # Scan encoder
-        scan_size = functools.reduce(operator.mul, scan_shape, 1)
-        self.scan_enc = make_linear_layers(scan_size, 256, 64, activation_func=activation)
-
-        # Value function network
-        self.critic = make_linear_layers(
-            128 + 64,
-            *hidden_dims,
-            1,
-            activation_func=activation,
-            output_activation=False
-        )
-
-    def evaluate(self, obs: dict[str, torch.Tensor], **kwargs) -> torch.Tensor:
-
-        if obs['critic_obs'].ndim == 3:
-            # Non-recurrent case
-            priv_latent = self.priv_enc(obs['critic_obs'].transpose(1, 2))
-            scan_enc = self.scan_enc(obs['scan'].flatten(1))
-            return self.critic(torch.cat([priv_latent, scan_enc], dim=1))
-        else:
-            return recurrent_wrapper(self.evaluate, obs)

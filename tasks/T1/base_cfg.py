@@ -4,7 +4,7 @@ import math
 import os.path
 from dataclasses import MISSING
 
-import isaaclab.sim as sim_utils
+from isaaclab import sim as sim_utils
 from isaaclab.actuators import DelayedPDActuatorCfg
 from isaaclab.assets import ArticulationCfg
 from isaaclab.assets import AssetBaseCfg
@@ -157,7 +157,7 @@ class T1SceneCfg(InteractiveSceneCfg):
         ray_alignment="yaw",
         update_period=0.0,
         history_length=0,
-        debug_vis=False,
+        debug_vis=True,
     )
 
     left_feet_scanner = FootholdRayCasterCfg(

@@ -20,7 +20,7 @@ class RLTaskCfg:
 
     max_iterations: int = MISSING
 
-    num_steps_per_env: int = 24
+    num_steps_per_update: int = 24
 
     save_interval: int = 100
 
@@ -30,3 +30,5 @@ class RLTaskCfg:
 
     def __post_init__(self):
         self.env_cfg.observations = self.algorithm_cfg.observation_cfg
+
+        self.algorithm_cfg.num_steps_per_update = self.num_steps_per_update
