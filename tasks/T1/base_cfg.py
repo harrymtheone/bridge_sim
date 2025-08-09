@@ -79,7 +79,7 @@ class T1ArticulationCfg(ArticulationCfg):
         joint_vel={".*": 0.0},  # the key can be regular expression, here ".*" matches all joint names
     )
 
-    soft_joint_pos_limit_factor = 1.0  # TODO: not sure if in target joint position mode, the input action got clipped by this value
+    soft_joint_pos_limit_factor = 0.9
 
     actuators = {}  # initialized in __post_init__
 
@@ -110,9 +110,8 @@ class T1ArticulationCfg(ArticulationCfg):
         # }
 
         for j_name in stiffness:
-            # You should understand the difference between implicit and explicit actuator
             self.actuators[j_name] = DelayedPDActuatorCfg(
-                joint_names_expr=[f".*{j_name}.*"],  # matches joints with name contains j_name
+                joint_names_expr=[f".*{j_name}.*"],
                 # effort_limit=?,  # load from USD file
                 # velocity_limit=?,  # load from USD file
                 stiffness=stiffness[j_name],  # Kp
@@ -224,38 +223,100 @@ class TerminationsCfg:
 @configclass
 class EventCfg:
     # startup
-    physics_material = EventTermCfg(
+    randomize_physics_material = EventTermCfg(
         func=mdp.evt.randomize_rigid_body_material,
         mode="startup",
-        params={
-            "asset_cfg": SceneEntityCfg("robot", body_names=".*"),
-            "static_friction_range": (0.8, 0.8),
-            "dynamic_friction_range": (0.6, 0.6),
-            "restitution_range": (0.0, 0.0),
-            "num_buckets": 64,
-        },
+        params=dict(
+            asset_cfg=SceneEntityCfg("robot", body_names=".*"),
+            static_friction_range=(0.2, 2.0),
+            dynamic_friction_range=(0.2, 2.0),
+            restitution_range=(0.1, 0.9),
+            num_buckets=64,
+        ),
     )
 
-    add_base_mass = EventTermCfg(
+    randomize_base_mass = EventTermCfg(
         func=mdp.evt.randomize_rigid_body_mass,
         mode="startup",
-        params={
-            "asset_cfg": SceneEntityCfg("robot", body_names="Trunk"),
-            "mass_distribution_params": (-5.0, 5.0),
-            "operation": "add",
-        },
+        params=dict(
+            asset_cfg=SceneEntityCfg("robot", body_names="Trunk"),
+            mass_distribution_params=(-5.0, 5.0),
+            operation="add",
+        ),
     )
 
-    base_com = EventTermCfg(
+    randomize_base_com = EventTermCfg(
         func=mdp.evt.randomize_rigid_body_com,
         mode="startup",
-        params={
-            "asset_cfg": SceneEntityCfg("robot", body_names="Trunk"),
-            "com_range": {"x": (-0.05, 0.05), "y": (-0.05, 0.05), "z": (-0.01, 0.01)},
-        },
+        params=dict(
+            asset_cfg=SceneEntityCfg("robot", body_names="Trunk"),
+            com_range=dict(x=(-0.05, 0.05), y=(-0.05, 0.05), z=(-0.01, 0.01)),
+        ),
     )
 
+    # TODO: randomize link mass
+
     # reset
+    randomize_start_base_state = EventTermCfg(
+        func=mdp.evt.reset_root_state_uniform,
+        mode="reset",
+        params=dict(
+            pose_range=dict(
+                x=(-0.5, 0.5),
+                y=(-0.5, 0.5),
+                z=(0., 0.1),
+                pitch=(-0.1, 0.1),
+                yaw=(-3.14, 3.14)
+            ),
+            velocity_range=dict(
+                x=(-0.5, 0.5),
+                y=(-0.5, 0.5),
+                z=(-0.5, 0.5),
+                roll=(-0.5, 0.5),
+                pitch=(-0.5, 0.5),
+                yaw=(-0.5, 0.5),
+            ),
+        ),
+    )
+
+    randomize_start_joint_state = EventTermCfg(
+        func=mdp.evt.reset_joints_by_offset,
+        mode="reset",
+        params=dict(
+            position_range=(-0.1, 0.1),
+            velocity_range=(-0.1, 0.1),
+        ),
+    )
+
+    # randomize_joint_friction = EventTermCfg(
+    #     func=mdp.evt.randomize_joint_parameters,
+    #     mode="reset",
+    #     params=dict(
+    #         asset_cfg=SceneEntityCfg("robot", joint_names=".*"),
+    #         friction_distribution_params=(0., 2.),
+    #     ),
+    # )
+    #
+    # randomize_joint_armature = EventTermCfg(
+    #     func=mdp.evt.randomize_joint_parameters,
+    #     mode="reset",
+    #     params=dict(
+    #         asset_cfg=SceneEntityCfg("robot", joint_names=".*"),
+    #         armature_distribution_params=(0.001, 0.05),
+    #         distribution="log_uniform",
+    #     ),
+    # )
+
+    # interval
+    push_robot = EventTermCfg(
+        func=mdp.evt.push_by_setting_velocity,
+        mode="interval",
+        interval_range_s=(5., 10.),
+        params=dict(
+            velocity_range=dict(x=(-0.5, 0.5), y=(-0.5, 0.5)),
+        ),
+    )
+
     # base_external_force_torque = EventTermCfg(
     #     func=mdp.apply_external_force_torque,
     #     mode="reset",
@@ -265,39 +326,6 @@ class EventCfg:
     #         "torque_range": (-0.0, 0.0),
     #     },
     # )
-
-    reset_base = EventTermCfg(
-        func=mdp.evt.reset_root_state_uniform,
-        mode="reset",
-        params={
-            "pose_range": {"x": (-0.5, 0.5), "y": (-0.5, 0.5), "yaw": (-3.14, 3.14)},
-            "velocity_range": {
-                "x": (-0.5, 0.5),
-                "y": (-0.5, 0.5),
-                "z": (-0.5, 0.5),
-                "roll": (-0.5, 0.5),
-                "pitch": (-0.5, 0.5),
-                "yaw": (-0.5, 0.5),
-            },
-        },
-    )
-
-    reset_robot_joints = EventTermCfg(
-        func=mdp.evt.reset_joints_by_scale,
-        mode="reset",
-        params={
-            "position_range": (0.5, 1.5),
-            "velocity_range": (0.0, 0.0),
-        },
-    )
-
-    # interval
-    push_robot = EventTermCfg(
-        func=mdp.evt.push_by_setting_velocity,
-        mode="interval",
-        interval_range_s=(10.0, 15.0),
-        params={"velocity_range": {"x": (-0.5, 0.5), "y": (-0.5, 0.5)}},
-    )
 
 
 @configclass
