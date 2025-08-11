@@ -27,10 +27,6 @@ class RLRunner:
         # Create algorithm
         self.algorithm = cfg.algorithm_cfg.class_type(cfg.algorithm_cfg, env=self.env)
 
-        # Initialize episode logger
-        self.episode_logger = EpisodeLogger(num_envs=self.env.num_envs)
-        self._prepare_log_dir(args)
-
         # Timing tracking
         self.collection_time = -1
         self.learn_time = -1
@@ -39,6 +35,10 @@ class RLRunner:
 
         self.start_it = 0
         self.cur_it = 0
+
+        # Initialize episode logger
+        self.episode_logger = EpisodeLogger(num_envs=self.env.num_envs)
+        self._prepare_log_dir(args)
 
     def learn(self):
         self.algorithm.train()

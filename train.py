@@ -27,17 +27,16 @@ def launch_app():
 
 
 def main(args):
-    from bridge_rl.runners import RLRunner
     from tasks import all_tasks
 
     task_cfg = all_tasks[args.task]()
-    task_cfg.max_iterations = 3000
+    task_cfg.max_iterations = 30000
 
     if args.debug:
         task_cfg.env_cfg.scene.num_envs = 64
         task_cfg.logger_backend = None
 
-    runner = RLRunner(cfg=task_cfg, args=args)
+    runner = task_cfg.class_type(cfg=task_cfg, args=args)
 
     runner.learn()
 

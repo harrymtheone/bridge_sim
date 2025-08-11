@@ -296,16 +296,16 @@ class EventCfg:
     #         friction_distribution_params=(0., 2.),
     #     ),
     # )
-    #
-    # randomize_joint_armature = EventTermCfg(
-    #     func=mdp.evt.randomize_joint_parameters,
-    #     mode="reset",
-    #     params=dict(
-    #         asset_cfg=SceneEntityCfg("robot", joint_names=".*"),
-    #         armature_distribution_params=(0.001, 0.05),
-    #         distribution="log_uniform",
-    #     ),
-    # )
+
+    randomize_joint_armature = EventTermCfg(
+        func=mdp.evt.randomize_joint_parameters,
+        mode="reset",
+        params=dict(
+            asset_cfg=SceneEntityCfg("robot", joint_names=".*"),
+            armature_distribution_params=(0.001, 0.05),
+            distribution="log_uniform",
+        ),
+    )
 
     # interval
     push_robot = EventTermCfg(
@@ -317,7 +317,7 @@ class EventCfg:
         ),
     )
 
-    # base_external_force_torque = EventTermCfg(
+    # push_robot = EventTermCfg(
     #     func=mdp.apply_external_force_torque,
     #     mode="reset",
     #     params={

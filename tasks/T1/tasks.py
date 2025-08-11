@@ -67,7 +67,10 @@ class T1ParkourDreamWaqTaskCfg(RLTaskCfg):
 class T1ParkourOdomPPOTaskCfg(RLTaskCfg):
     env_cfg: T1ParkourEnvCfg = T1ParkourEnvCfg()
 
-    algorithm_cfg = OdomCfg()
+    algorithm_cfg = OdomCfg(
+        continue_from_last_std=False,
+        init_noise_std=0.5
+    )
 
     max_iterations: int = 10000
 

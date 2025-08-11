@@ -183,20 +183,20 @@ class T1ParkourEnvCfg(ManagerBasedRLEnvCfg):
                     'plane': terrains.MeshPlaneTerrainCfg(
                         proportion=0.5,
                     ),
-                    # 'stairs_up': terrains.MeshPyramidStairsTerrainCfg(
-                    #     proportion=0.25,
-                    #     border_width=0.5,
-                    #     step_height_range=(0.05, 0.13),
-                    #     step_width=0.25,
-                    #     platform_width=2,
-                    # ),
-                    # 'stairs_down': terrains.MeshInvertedPyramidStairsTerrainCfg(
-                    #     proportion=0.25,
-                    #     border_width=0.5,
-                    #     step_height_range=(0.05, 0.13),
-                    #     step_width=0.25,
-                    #     platform_width=2,
-                    # ),
+                    'stairs_up': terrains.MeshPyramidStairsTerrainCfg(
+                        proportion=0.25,
+                        border_width=0.5,
+                        step_height_range=(0.05, 0.13),
+                        step_width=0.25,
+                        platform_width=2,
+                    ),
+                    'stairs_down': terrains.MeshInvertedPyramidStairsTerrainCfg(
+                        proportion=0.25,
+                        border_width=0.5,
+                        step_height_range=(0.05, 0.13),
+                        step_width=0.25,
+                        platform_width=2,
+                    ),
                 },
             )
         )
