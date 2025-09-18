@@ -13,42 +13,33 @@ from . import T1SceneCfg, ActionsCfg, TerminationsCfg, EventCfg, CommandsCfg
 @configclass
 class RewardsCfg:
     # ##################################### gait #####################################
-    # track_ref_joint_pos = RewardTermCfg(
-    #     func=mdp.rew.track_ref_dof_pos_T1,
-    #     weight=2.0,
-    #     params=dict(
-    #         command_name='base_velocity',
-    #         ref_motion_scale=0.3,
-    #         robot_cfg=SceneEntityCfg(
-    #             "robot",
-    #             joint_names=[
-    #                 "Left_Hip_Pitch", "Left_Knee_Pitch", "Left_Ankle_Pitch",
-    #                 "Right_Hip_Pitch", "Right_Knee_Pitch", "Right_Ankle_Pitch"
-    #             ],
-    #             preserve_order=True
-    #         )
-    #     )
-    # )
+    track_ref_joint_pos = RewardTermCfg(
+        func=mdp.rew.track_ref_dof_pos_T1,
+        weight=2.0,
+        params=dict(
+            motion_name='ref_motion',
+        )
+    )
 
-    # contact_accordance = RewardTermCfg(
-    #     func=mdp.rew.feet_contact_accordance,
-    #     weight=1.2,
-    #     params=dict(
-    #         command_name='base_velocity',
-    #         contact_sensor_cfg=SceneEntityCfg("contact_forces", body_names=".*foot.*"),
-    #     )
-    # )
+    contact_accordance = RewardTermCfg(
+        func=mdp.rew.feet_contact_accordance,
+        weight=1.2,
+        params=dict(
+            command_name='phase',
+            contact_sensor_cfg=SceneEntityCfg("contact_forces", body_names=".*foot.*"),
+        )
+    )
 
-    # feet_clearance = RewardTermCfg(
-    #     func=mdp.rew.feet_clearance_masked,
-    #     weight=0.6,
-    #     params=dict(
-    #         command_name="base_velocity",
-    #         sensor_l_cfg=SceneEntityCfg("left_feet_scanner"),
-    #         sensor_r_cfg=SceneEntityCfg("right_feet_scanner"),
-    #         feet_height_target=0.04
-    #     )
-    # )
+    feet_clearance = RewardTermCfg(
+        func=mdp.rew.feet_clearance_masked,
+        weight=0.6,
+        params=dict(
+            command_name="phase",
+            sensor_l_cfg=SceneEntityCfg("left_feet_scanner"),
+            sensor_r_cfg=SceneEntityCfg("right_feet_scanner"),
+            feet_height_target=0.04
+        )
+    )
 
     # feet_air_time = RewardTermCfg(
     #     func=mdp.feet_air_time,

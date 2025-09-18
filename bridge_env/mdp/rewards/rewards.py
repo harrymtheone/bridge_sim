@@ -7,6 +7,7 @@ from isaaclab.managers import SceneEntityCfg
 from isaaclab.sensors import ContactSensor
 from isaaclab.utils.math import euler_xyz_from_quat
 
+from bridge_env.envs import BridgeEnv
 from bridge_env.mdp.commands.phase_command import PhaseCommand
 from bridge_env.sensors.ray_caster import FootholdRayCaster
 
@@ -48,38 +49,15 @@ gait rewards.
 
 
 def track_ref_dof_pos_T1(
-        env: ManagerBasedRLEnv,
-        command_name: str,
-        ref_motion_scale: float,
+        env: BridgeEnv,
+        motion_name: str,
         tracking_sigma: float = 5.,
         robot_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
 ) -> torch.Tensor:
     robot: Articulation = env.scene[robot_cfg.name]
+    ref_motion = env.motion_generator.get_motion(motion_name)
 
-    cmd_term: PhaseCommand = env.command_manager.get_term(command_name)
-    clocks = cmd_term.get_clocks()
-    swing_ratio = cmd_term.air_ratio
-    delta_t = cmd_term.delta_t
-
-    ref_dof_pos = torch.zeros_like(robot.data.joint_pos)
-    scale_1 = ref_motion_scale
-    scale_2 = 2 * scale_1
-
-    phase_swing = torch.clip((clocks - delta_t / 2) / (swing_ratio - delta_t), min=0., max=1.)
-    clock = torch.sin(torch.pi * phase_swing)
-
-    # left motion
-    j_ids = robot_cfg.joint_ids
-    ref_dof_pos[:, j_ids[0]] = -clock[:, 0] * scale_1
-    ref_dof_pos[:, j_ids[1]] = clock[:, 0] * scale_2
-    ref_dof_pos[:, j_ids[2]] = -clock[:, 0] * scale_1
-    # right motion
-    ref_dof_pos[:, j_ids[3]] = -clock[:, 1] * scale_1
-    ref_dof_pos[:, j_ids[4]] = clock[:, 1] * scale_2
-    ref_dof_pos[:, j_ids[5]] = -clock[:, 1] * scale_1
-
-    ref_dof_pos[:] += robot.data.default_joint_pos
-    diff = torch.norm(ref_dof_pos - robot.data.joint_pos, dim=1)
+    diff = torch.norm(ref_motion - robot.data.joint_pos, dim=1)
     return torch.exp(-diff * tracking_sigma) - 0.2 * diff.clamp(0., 0.5)
 
 
@@ -90,10 +68,14 @@ def feet_contact_accordance(
         contact_force_threshold: float = 5.0,
 ) -> torch.Tensor:
     contact_sensor: ContactSensor = env.scene[contact_sensor_cfg.name]
-    cmd_term: PhaseCommand = env.command_manager.get_term(command_name)
+    command = env.command_manager.get_term(command_name)
 
-    swing = cmd_term.swing_mask
-    stance = cmd_term.stance_mask
+    if not isinstance(command, PhaseCommand):
+        raise TypeError(f"feet_contact_accordance reward requires PhaseCommand for clock input!"
+                        f" Got [{command_name}] with type [{type(command)}]")
+
+    swing = command.swing_mask
+    stance = command.stance_mask
 
     net_contact_forces = contact_sensor.data.net_forces_w_history
     is_contact = torch.max(torch.norm(net_contact_forces[:, :, contact_sensor_cfg.body_ids], dim=-1), dim=1)[0] > contact_force_threshold
@@ -116,7 +98,11 @@ def feet_clearance_masked(
 ) -> torch.Tensor:
     scanner_l: FootholdRayCaster = env.scene.sensors[sensor_l_cfg.name]
     scanner_r: FootholdRayCaster = env.scene.sensors[sensor_r_cfg.name]
-    cmd_term: PhaseCommand = env.command_manager.get_term(command_name)
+    command = env.command_manager.get_term(command_name)
+
+    if not isinstance(command, PhaseCommand):
+        raise TypeError(f"feet_clearance_masked reward requires PhaseCommand for clock input!"
+                        f" Got [{command_name}] with type [{type(command)}]")
 
     foothold_pts_height = torch.stack([
         scanner_l.ray_starts_w[:, :, 2] - scanner_l.data.ray_hits_w[:, :, 2] + scanner_l.cfg.reading_bias_z,
@@ -124,7 +110,7 @@ def feet_clearance_masked(
     ], dim=1)
 
     rew = (foothold_pts_height.mean(dim=2) / feet_height_target).clip(min=-1, max=1)
-    rew[cmd_term.stance_mask] = 0.
+    rew[command.stance_mask] = 0.
 
     return rew.sum(dim=1)
 

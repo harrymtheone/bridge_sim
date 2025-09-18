@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import MISSING
-from typing import TYPE_CHECKING, Callable
+from typing import TYPE_CHECKING, Callable, Sequence
 
 import torch
 from isaaclab.utils import configclass
@@ -46,6 +46,10 @@ class MotionGenerator(ManagerBase):
             return next(iter(self._motion_buffer.values()))
 
         return self._motion_buffer[term_name]
+
+    def reset(self, env_ids: Sequence[int] | None = None) -> dict[str, float]:
+        self.compute()
+        return {}
 
     def compute(self) -> dict[str, torch.Tensor]:
         self._motion_buffer: dict[str, torch.Tensor] = {}
