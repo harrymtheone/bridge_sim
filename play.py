@@ -30,7 +30,7 @@ def main(args):
     args.resume = True
 
     task_cfg = all_tasks[args.task]()
-    task_cfg.env_cfg.scene.num_envs = 4
+    task_cfg.env_cfg.scene.num_envs = 15
     task_cfg.env_cfg.scene.ground.terrain_generator.num_rows = 4
     task_cfg.env_cfg.scene.ground.terrain_generator.num_cols = 4
 

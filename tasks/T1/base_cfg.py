@@ -340,7 +340,7 @@ class CommandsCfg:
             rel_standing_envs=0.02,
             debug_vis=True,
             ranges=mdp.cmd.UniformVelocityCommandCfg.Ranges(
-                lin_vel_x=(-0.8, 1.2), lin_vel_y=(-0.8, 0.8), ang_vel_z=(-1.0, 1.0), heading=(-math.pi, math.pi)
+                lin_vel_x=(-0.5, 0.8), lin_vel_y=(-0.5, 0.5), ang_vel_z=(-1.0, 1.0), heading=(-math.pi, math.pi)
             ),
         ),
         num_clocks=2,

@@ -113,7 +113,7 @@ class BaseRecurrentActor(BaseActor):
             Hidden states tensor or None if not initialized
         """
         if self.hidden_states is None:
-            raise RuntimeError("Hidden states not initialized")
+            return None
         return self.hidden_states.detach()
 
     def reset(self, dones: torch.Tensor) -> None:

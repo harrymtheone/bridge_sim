@@ -2,6 +2,7 @@ from .base_cfg import T1ArticulationCfg, T1SceneCfg, ActionsCfg, TerminationsCfg
 
 from .t1_flat_env_cfg import T1FlatEnvCfg
 from .t1_parkour_cfg import T1ParkourEnvCfg
+from .t1_full_cfg import T1FullEnvCfg
 
 from .tasks import *
 
@@ -11,5 +12,6 @@ t1_tasks = {
 
     't1_odom_parkour': T1ParkourOdomPPOTaskCfg,
 
+    't1_full': T1FullEnvCfg,
 }
 
