@@ -4,7 +4,7 @@ from isaaclab.managers import ObservationGroupCfg, ObservationTermCfg
 from isaaclab.utils import configclass
 from isaaclab.utils.noise import GaussianNoiseCfg, UniformNoiseCfg
 
-from bridge_env.envs import mdp
+from bridge_env import mdp
 from bridge_rl.algorithms import Proprio, UniversalCriticObs
 from bridge_rl.algorithms.ppo import PPOCfg
 from . import OdomPPO

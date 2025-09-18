@@ -10,6 +10,7 @@ import torch
 from isaaclab.envs import ManagerBasedRLEnv
 from torch.utils.tensorboard import SummaryWriter
 
+from bridge_env.envs import BridgeEnv
 from bridge_rl.utils import EpisodeLogger
 
 if TYPE_CHECKING:
@@ -21,7 +22,7 @@ class RLRunner:
         cfg.validate()
         self.cfg = cfg
 
-        self.env = ManagerBasedRLEnv(cfg=cfg.env_cfg)
+        self.env = BridgeEnv(cfg=cfg.env_cfg)
         self.device = args.device
 
         # Create algorithm

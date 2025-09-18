@@ -15,8 +15,6 @@ class PhaseCommand(CommandTerm):
 
     def __init__(self, cfg: PhaseCommandCfg, env: ManagerBasedRLEnv):
         self.env: ManagerBasedRLEnv = env
-        self.base_command_cfg = cfg.base_command_cfg
-        self.base_command = self.base_command_cfg.class_type(self.base_command_cfg, env)
 
         super().__init__(cfg, env)
 
@@ -32,12 +30,8 @@ class PhaseCommand(CommandTerm):
 
         self.phase_cmd = torch.zeros(env.num_envs, self.num_phase_clock, device=env.device)
 
-        self.metrics = self.base_command.metrics
-
-    def __str__(self) -> str:  # TODO: add more details
-        base_command_name = str(self.base_command).split(":")[0]
-        msg = f"PhaseCommand warpped with {base_command_name}:\n"
-        msg += f"\tBase command dimension: {self.base_command.command.size(1)}\n"
+    def __str__(self) -> str:
+        msg = "PhaseCommand:\n"
         msg += f"\tNumber of phase clock: {self.num_phase_clock}\n"
         msg += f"\tPeriod: {self.period_s}s\n"
         msg += f"\tPhase bias: {self.cfg.clock_bias}\n"
@@ -47,55 +41,37 @@ class PhaseCommand(CommandTerm):
     Properties
     """
 
-    @property
-    def command(self) -> torch.Tensor:
-        """The desired base velocity command in the base frame. Shape is (num_envs, 3)."""
-        return torch.cat([self.base_command.command, torch.sin(2 * torch.pi * self.phase_cmd)], dim=1)
+    def _update_metrics(self):
+        return
 
     @property
-    def is_standing_env(self) -> torch.Tensor:
-        assert hasattr(self.base_command, "is_standing_env"), "base command must have is_standing_env attribute"
-        return self.base_command.is_standing_env  # noqa
+    def command(self) -> torch.Tensor:
+        return torch.sin(2 * torch.pi * self.phase_cmd)
 
     @property
     def stance_mask(self) -> torch.Tensor:
         phase = self.get_clocks()
-        stance_mask = (phase >= self.air_ratio + self.delta_t) & (phase < (1. - self.delta_t))
-        return stance_mask | self.is_standing_env[:, None]
+        return (phase >= self.air_ratio + self.delta_t) & (phase < (1. - self.delta_t))
 
     @property
-    def swing_mask(self):
+    def swing_mask(self) -> torch.Tensor:
         phase = self.get_clocks()
-        swing_mask = (phase >= self.delta_t) & (phase < (self.air_ratio - self.delta_t))
-        return swing_mask & ~self.is_standing_env[:, None]
+        return (phase >= self.delta_t) & (phase < (self.air_ratio - self.delta_t))
 
     def get_clocks(self) -> torch.Tensor:
         return (self.phase[:, None] + self.phase_bias) % 1.0
 
-    def _update_metrics(self):
-        self.base_command._update_metrics()
-
     def _resample_command(self, env_ids: Sequence[int]):
-        self.base_command._resample_command(env_ids)
-
         self.phase_length_buf[env_ids] = 0.
 
         if self.cfg.randomize_start_phase:
             self.start_phase[env_ids] = torch.rand(len(env_ids), device=self.start_phase.device)
 
     def _update_command(self):
-        self.base_command._update_command()
-
         self.phase_length_buf[:] += self.env.step_dt
         self.phase[:] = (self.phase_length_buf / self.period_s + self.start_phase) % 1.0
 
         self.phase_cmd[:] = self.get_clocks()
 
-        if self.cfg.stand_walk_switch:
-            self.phase_cmd[:] *= ~self.is_standing_env.unsqueeze(-1)
-
-    def _set_debug_vis_impl(self, debug_vis: bool):
-        return self.base_command._set_debug_vis_impl(debug_vis)
-
-    def _debug_vis_callback(self, event):
-        return self.base_command._debug_vis_callback(event)
+        # if self.cfg.stand_walk_switch:  TODO
+        #     self.phase_cmd[:] *= ~self.is_standing_env.unsqueeze(-1)

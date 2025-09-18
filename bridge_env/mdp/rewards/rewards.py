@@ -7,7 +7,7 @@ from isaaclab.managers import SceneEntityCfg
 from isaaclab.sensors import ContactSensor
 from isaaclab.utils.math import euler_xyz_from_quat
 
-from bridge_env.envs.mdp.commands.phase_command import PhaseCommand
+from bridge_env.mdp.commands.phase_command import PhaseCommand
 from bridge_env.sensors.ray_caster import FootholdRayCaster
 
 """

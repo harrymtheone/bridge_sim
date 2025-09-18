@@ -19,8 +19,7 @@ from isaaclab.sim import UsdFileCfg, RigidBodyPropertiesCfg, ArticulationRootPro
 from isaaclab.terrains import TerrainImporterCfg
 from isaaclab.utils import configclass
 
-from bridge_env import BRIDGE_ROBOTS_DIR
-from bridge_env.envs import mdp
+from bridge_env import BRIDGE_ROBOTS_DIR, mdp
 from bridge_env.sensors.ray_caster import FootholdRayCasterCfg
 from bridge_env.sensors.ray_caster.patterns import GridPatternV2Cfg
 
@@ -335,18 +334,6 @@ class EventCfg:
 @configclass
 class CommandsCfg:
     base_velocity = mdp.cmd.PhaseCommandCfg(
-        base_command_cfg=mdp.cmd.UniformVelocityCommandCfg(
-            asset_name="robot",
-            resampling_time_range=(5.0, 10.0),
-            heading_command=True,
-            heading_control_stiffness=0.5,
-            rel_heading_envs=0.5,
-            rel_standing_envs=0.02,
-            debug_vis=True,
-            ranges=mdp.cmd.UniformVelocityCommandCfg.Ranges(
-                lin_vel_x=(-0.5, 0.8), lin_vel_y=(-0.5, 0.5), ang_vel_z=(-1.0, 1.0), heading=(-math.pi, math.pi)
-            ),
-        ),
         num_clocks=2,
         period_s=0.7,
         clock_bias=[0, 0.5],
@@ -562,6 +549,3 @@ class T1ParkourEnvCfg(ManagerBasedRLEnvCfg):
     rewards = RewardsCfg()
 
     terminations = TerminationsCfg()
-
-    def __post_init__(self):
-        self.commands.base_velocity.base_command_cfg.rel_heading_envs = 1.0

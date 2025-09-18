@@ -15,8 +15,7 @@ from isaaclab.sim import UsdFileCfg, RigidBodyPropertiesCfg, ArticulationRootPro
 from isaaclab.terrains import TerrainImporterCfg
 from isaaclab.utils import configclass
 
-from bridge_env import BRIDGE_ROBOTS_DIR
-from bridge_env.envs import mdp
+from bridge_env import BRIDGE_ROBOTS_DIR, mdp
 from bridge_env.sensors.ray_caster import FootholdRayCasterCfg
 from bridge_env.sensors.ray_caster.patterns import GridPatternV2Cfg
 
@@ -32,8 +31,8 @@ class T1ArticulationCfg(ArticulationCfg):
         usd_path=os.path.join(BRIDGE_ROBOTS_DIR, "T1/legs/t1.usd"),
         rigid_props=RigidBodyPropertiesCfg(
             disable_gravity=False,
-            linear_damping=0.,
-            angular_damping=0.,
+            # linear_damping=0.,
+            # angular_damping=0.,
             max_linear_velocity=1000.,
             max_angular_velocity=1000.,
         ),
@@ -112,8 +111,6 @@ class T1ArticulationCfg(ArticulationCfg):
         for j_name in stiffness:
             self.actuators[j_name] = DelayedPDActuatorCfg(
                 joint_names_expr=[f".*{j_name}.*"],
-                # effort_limit=?,  # load from USD file
-                # velocity_limit=?,  # load from USD file
                 stiffness=stiffness[j_name],  # Kp
                 damping=damping[j_name],  # Kd
                 armature=0.01,
@@ -228,8 +225,8 @@ class EventCfg:
         mode="startup",
         params=dict(
             asset_cfg=SceneEntityCfg("robot", body_names=".*"),
-            static_friction_range=(0.2, 2.0),
-            dynamic_friction_range=(0.2, 2.0),
+            static_friction_range=(0.2, 1.0),
+            dynamic_friction_range=(0.2, 1.0),
             restitution_range=(0.1, 0.9),
             num_buckets=64,
         ),
@@ -288,24 +285,26 @@ class EventCfg:
         ),
     )
 
-    # randomize_joint_friction = EventTermCfg(
-    #     func=mdp.evt.randomize_joint_parameters,
-    #     mode="reset",
-    #     params=dict(
-    #         asset_cfg=SceneEntityCfg("robot", joint_names=".*"),
-    #         friction_distribution_params=(0., 2.),
-    #     ),
-    # )
-
-    randomize_joint_armature = EventTermCfg(
+    randomize_joint_parameters = EventTermCfg(
         func=mdp.evt.randomize_joint_parameters,
         mode="reset",
         params=dict(
             asset_cfg=SceneEntityCfg("robot", joint_names=".*"),
-            armature_distribution_params=(0.001, 0.05),
+            friction_distribution_params=(0., 2.),
+            armature_distribution_params=(0.01, 0.05),
             distribution="log_uniform",
         ),
     )
+
+    # randomize_joint_armature = EventTermCfg(
+    #     func=mdp.evt.randomize_joint_parameters,
+    #     mode="reset",
+    #     params=dict(
+    #         asset_cfg=SceneEntityCfg("robot", joint_names=".*"),
+    #         armature_distribution_params=(0.001, 0.05),
+    #         distribution="log_uniform",
+    #     ),
+    # )
 
     # interval
     push_robot = EventTermCfg(
@@ -330,19 +329,20 @@ class EventCfg:
 
 @configclass
 class CommandsCfg:
-    base_velocity = mdp.cmd.PhaseCommandCfg(
-        base_command_cfg=mdp.cmd.UniformVelocityCommandCfg(
-            asset_name="robot",
-            resampling_time_range=(5.0, 10.0),
-            heading_command=True,
-            heading_control_stiffness=0.5,
-            rel_heading_envs=0.5,
-            rel_standing_envs=0.02,
-            debug_vis=True,
-            ranges=mdp.cmd.UniformVelocityCommandCfg.Ranges(
-                lin_vel_x=(-0.5, 0.8), lin_vel_y=(-0.5, 0.5), ang_vel_z=(-1.0, 1.0), heading=(-math.pi, math.pi)
-            ),
+    base_velocity = mdp.cmd.UniformVelocityCommandCfg(
+        asset_name="robot",
+        resampling_time_range=(5.0, 10.0),
+        heading_command=True,
+        heading_control_stiffness=0.5,
+        rel_heading_envs=0.5,
+        rel_standing_envs=0.02,
+        debug_vis=True,
+        ranges=mdp.cmd.UniformVelocityCommandCfg.Ranges(
+            lin_vel_x=(-0.5, 0.8), lin_vel_y=(-0.5, 0.5), ang_vel_z=(-1.0, 1.0), heading=(-math.pi, math.pi)
         ),
+    )
+
+    phase = mdp.cmd.PhaseCommandCfg(
         num_clocks=2,
         period_s=0.7,
         clock_bias=[0, 0.5],

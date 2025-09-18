@@ -11,7 +11,7 @@ from .phase_command import PhaseCommand
 class PhaseCommandCfg(CommandTermCfg):
     class_type: type = PhaseCommand
 
-    base_command_cfg: CommandTermCfg = MISSING
+    # base_command_name: str = MISSING
 
     num_clocks: int = MISSING
 
@@ -27,7 +27,5 @@ class PhaseCommandCfg(CommandTermCfg):
 
     delta_t: float = MISSING
 
-    def __post_init__(self):
-        assert self.num_clocks == len(self.clock_bias)
-        self.resampling_time_range = self.base_command_cfg.resampling_time_range
-        self.debug_vis = self.base_command_cfg.debug_vis
+    resampling_time_range = (1e5, 1e5)
+    """ Phase command will never resample """

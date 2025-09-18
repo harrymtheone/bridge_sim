@@ -10,7 +10,7 @@ from isaaclab.scene import InteractiveSceneCfg
 from isaaclab.sim import SimulationCfg
 from isaaclab.utils import configclass
 
-from bridge_env.envs import mdp
+from bridge_env import mdp
 from . import T1SceneCfg, ActionsCfg, TerminationsCfg, EventCfg, CommandsCfg
 
 
