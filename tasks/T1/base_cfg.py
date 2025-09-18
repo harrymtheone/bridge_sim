@@ -43,7 +43,7 @@ class T1ArticulationCfg(ArticulationCfg):
     )
 
     init_state = ArticulationCfg.InitialStateCfg(
-        pos=(0., 0., 0.7),
+        pos=(0., 0., 1.7),
         rot=(1., 0., 0., 0.),  # w, x, y, z
         lin_vel=(0., 0., 0.),
         ang_vel=(0., 0., 0.),
@@ -265,14 +265,15 @@ class EventCfg:
                 pitch=(-0.1, 0.1),
                 yaw=(-3.14, 3.14)
             ),
-            velocity_range=dict(
-                x=(-0.5, 0.5),
-                y=(-0.5, 0.5),
-                z=(-0.5, 0.5),
-                roll=(-0.5, 0.5),
-                pitch=(-0.5, 0.5),
-                yaw=(-0.5, 0.5),
-            ),
+            # velocity_range=dict(
+            #     x=(-0.5, 0.5),
+            #     y=(-0.5, 0.5),
+            #     z=(-0.5, 0.5),
+            #     roll=(-0.5, 0.5),
+            #     pitch=(-0.5, 0.5),
+            #     yaw=(-0.5, 0.5),
+            # ),
+            velocity_range={},
         ),
     )
 

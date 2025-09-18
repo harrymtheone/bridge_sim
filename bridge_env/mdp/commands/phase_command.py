@@ -50,15 +50,15 @@ class PhaseCommand(CommandTerm):
 
     @property
     def stance_mask(self) -> torch.Tensor:
-        phase = self.get_clocks()
+        phase = self.get_phase()
         return (phase >= self.air_ratio + self.delta_t) & (phase < (1. - self.delta_t))
 
     @property
     def swing_mask(self) -> torch.Tensor:
-        phase = self.get_clocks()
+        phase = self.get_phase()
         return (phase >= self.delta_t) & (phase < (self.air_ratio - self.delta_t))
 
-    def get_clocks(self) -> torch.Tensor:
+    def get_phase(self) -> torch.Tensor:
         return (self.phase[:, None] + self.phase_bias) % 1.0
 
     def _resample_command(self, env_ids: Sequence[int]):
@@ -71,7 +71,7 @@ class PhaseCommand(CommandTerm):
         self.phase_length_buf[:] += self.env.step_dt
         self.phase[:] = (self.phase_length_buf / self.period_s + self.start_phase) % 1.0
 
-        self.phase_cmd[:] = self.get_clocks()
+        self.phase_cmd[:] = self.get_phase()
 
         # if self.cfg.stand_walk_switch:  TODO
         #     self.phase_cmd[:] *= ~self.is_standing_env.unsqueeze(-1)

@@ -26,18 +26,51 @@ def launch_app():
 
 
 def main(args):
+    import vis
+    import torch
+    from isaaclab.terrains import TerrainImporterCfg
+    from rich.live import Live
+
     from tasks import all_tasks
     args.resume = True
 
     task_cfg = all_tasks[args.task]()
-    task_cfg.env_cfg.scene.num_envs = 15
-    task_cfg.env_cfg.scene.ground.terrain_generator.num_rows = 4
-    task_cfg.env_cfg.scene.ground.terrain_generator.num_cols = 4
+
+    task_cfg.env_cfg.scene.num_envs = 2
+    if isinstance(task_cfg.env_cfg.scene.ground, TerrainImporterCfg):
+        task_cfg.env_cfg.scene.ground.terrain_generator.num_rows = 4
+        task_cfg.env_cfg.scene.ground.terrain_generator.num_cols = 4
 
     task_cfg.env_cfg.sim.device = args.device
     task_cfg.logger_backend = None
+
     runner = task_cfg.class_type(task_cfg, args)
-    runner.play()
+    env = runner.env
+    runner.algorithm.eval()
+
+    observations, infos = env.reset()
+
+    with Live(vis.gen_info_panel(env)) as live:
+        while True:
+            observations['use_estimated_values'] = torch.zeros(env.num_envs, dtype=torch.bool, device=env.device)  # TODO: not finished here?!
+
+            rtn = runner.algorithm.play_act(observations)
+            actions = rtn['actions']
+
+            # actions = {'action': rtn['actions'] * 0.}
+
+            actions = env.motion_generator.get_motion('ref_motion') - env.scene['robot'].data.default_joint_pos
+
+            # actions = torch.zeros_like(actions)
+            # phase = self.env.command_manager.default_term.get_phase()
+            # actions[self.env.lookat_id, 0] = 0.1 * torch.sin(2 * torch.pi * phase[self.env.lookat_id, 0])
+
+            # actions = {'action': actions}
+            observations, rewards, terminated, timeouts, infos = env.step(actions)
+
+            live.update(vis.gen_info_panel(env))
+
+            # visualizer.plot(env)
 
 
 if __name__ == '__main__':

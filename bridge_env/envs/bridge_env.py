@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Sequence
 import torch
 from isaaclab.envs import ManagerBasedRLEnv, VecEnvStepReturn
 
-from ..managers import MotionGenerator
+from bridge_env.managers import MotionGenerator
 
 if TYPE_CHECKING:
     from . import BridgeEnvCfg

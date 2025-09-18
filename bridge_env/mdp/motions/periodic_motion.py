@@ -33,8 +33,8 @@ def stepper_with_air_ratio(
     air_ratio = command.air_ratio
     delta_t = command.delta_t
 
-    clocks = command.get_clocks()
-    phase_swing = torch.clip((clocks - delta_t / 2) / (air_ratio - delta_t), min=0., max=1.)
+    phase = command.get_phase()
+    phase_swing = torch.clip((phase - delta_t / 2) / (air_ratio - delta_t), min=0., max=1.)
     clocks = torch.sin(torch.pi * phase_swing)
 
     ref_dof_pos = torch.zeros(env.num_envs, robot.num_joints, device=robot.device)

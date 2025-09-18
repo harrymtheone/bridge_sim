@@ -175,29 +175,9 @@ class RLRunner:
 
                 rtn = self.algorithm.play_act(observations)
 
-                actions = rtn['actions']
+                # actions = rtn['actions']
 
-                # robot = self.env.scene['robot']
-                # cmd_term: PhaseCommand = self.env.command_manager.get_term('base_velocity')  # noqa
-                # ref_dof_pos = torch.zeros_like(robot.data.joint_pos)
-                # swing_ratio = cmd_term.air_ratio
-                # delta_t = cmd_term.delta_t
-                # scale_1 = 0.6
-                # scale_2 = 2 * scale_1
-                # phase_swing = torch.clip((cmd_term.get_clocks() - delta_t / 2) / (swing_ratio - delta_t), min=0., max=1.)
-                # clock = torch.sin(torch.pi * phase_swing)
-                #
-                # # left motion
-                # ref_dof_pos[:, 1] = -clock[:, 0] * scale_1
-                # ref_dof_pos[:, 7] = clock[:, 0] * scale_2
-                # ref_dof_pos[:, 9] = -clock[:, 0] * scale_1
-                #
-                # # right motion
-                # ref_dof_pos[:, 2] = -clock[:, 1] * scale_1
-                # ref_dof_pos[:, 8] = clock[:, 1] * scale_2
-                # ref_dof_pos[:, 10] = -clock[:, 1] * scale_1
-                #
-                # actions = ref_dof_pos
+                actions = self.env.motion_generator.get_motion('ref_motion') - self.env.scene['robot'].data.default_joint_pos
 
                 observations, rewards, terminated, timeouts, infos = self.env.step(actions)
 
