@@ -4,9 +4,8 @@ from dataclasses import MISSING
 from typing import TYPE_CHECKING, Callable, Sequence
 
 import torch
+from isaaclab.managers import ManagerBase, ManagerTermBaseCfg
 from isaaclab.utils import configclass
-
-from . import ManagerBase, ManagerTermBaseCfg
 
 if TYPE_CHECKING:
     from isaaclab.envs import ManagerBasedRLEnv

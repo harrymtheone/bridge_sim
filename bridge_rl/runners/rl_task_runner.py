@@ -165,22 +165,6 @@ class RLRunner:
             f"""{'CUDA reserved:':>{pad}} {torch.cuda.memory_reserved() / 1024 / 1024:.2f} MB\n"""
         )
 
-    def play(self):
-        self.algorithm.eval()
-
-        observations, infos = self.env.reset()
-        with torch.inference_mode():
-            while True:
-                observations['use_estimated_values'] = torch.zeros(self.env.num_envs, dtype=torch.bool, device=self.device)  # TODO: not finished here?!
-
-                rtn = self.algorithm.play_act(observations)
-
-                # actions = rtn['actions']
-
-                actions = self.env.motion_generator.get_motion('ref_motion') - self.env.scene['robot'].data.default_joint_pos
-
-                observations, rewards, terminated, timeouts, infos = self.env.step(actions)
-
     def load(self, path, load_optimizer=True):
         print("*" * 80)
         print("Loading model from", path)

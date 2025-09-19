@@ -30,7 +30,7 @@ class T1ArticulationCfg(ArticulationCfg):
     spawn = UsdFileCfg(
         usd_path=os.path.join(BRIDGE_ROBOTS_DIR, "T1/legs/t1.usd"),
         rigid_props=RigidBodyPropertiesCfg(
-            disable_gravity=False,
+            disable_gravity=True,
             # linear_damping=0.,
             # angular_damping=0.,
             max_linear_velocity=1000.,
@@ -294,6 +294,7 @@ class EventCfg:
             friction_distribution_params=(0., 2.),
             armature_distribution_params=(0.01, 0.05),
             distribution="log_uniform",
+            operation="abs",
         ),
     )
 

@@ -32,7 +32,7 @@ def main(args):
     from rich.live import Live
 
     from tasks import all_tasks
-    args.resume = True
+    args.resume = False
 
     task_cfg = all_tasks[args.task]()
 

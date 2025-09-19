@@ -8,12 +8,13 @@ from bridge_env import mdp
 
 
 @configclass
-class Proprio(ObservationGroupCfg):
+class UniversalProprioWithPhase(ObservationGroupCfg):
     base_ang_vel = ObservationTermCfg(func=mdp.obs.base_ang_vel, noise=UniformNoiseCfg(n_min=-0.2, n_max=0.2))
 
     projected_gravity = ObservationTermCfg(func=mdp.obs.projected_gravity, noise=UniformNoiseCfg(n_min=-0.1, n_max=0.1))
 
     phase_command = ObservationTermCfg(func=mdp.obs.generated_commands, params={"command_name": "phase"})
+
     vel_command = ObservationTermCfg(func=mdp.obs.generated_commands, params={"command_name": "base_velocity"})
 
     joint_pos = ObservationTermCfg(func=mdp.obs.joint_pos_rel, noise=UniformNoiseCfg(n_min=-0.01, n_max=0.01))

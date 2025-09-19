@@ -6,7 +6,7 @@ from isaaclab.utils import configclass
 from bridge_env import mdp
 from bridge_rl.algorithms import PPOCfg
 from . import DreamWaQ
-from ..templates import Proprio, UniversalCriticObs
+from ..templates import UniversalProprioWithPhase, UniversalCriticObs
 
 
 @configclass
@@ -15,7 +15,7 @@ class DreamWaQObservationsCfg:
     class Scan(ObservationGroupCfg):
         scan = ObservationTermCfg(func=mdp.obs.height_scan, params=MISSING)
 
-    proprio: Proprio = Proprio(enable_corruption=True)
+    proprio: UniversalProprioWithPhase = UniversalProprioWithPhase(enable_corruption=True)
 
     critic_obs: UniversalCriticObs = UniversalCriticObs(
         enable_corruption=True,

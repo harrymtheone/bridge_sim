@@ -5,7 +5,7 @@ from isaaclab.utils import configclass
 from isaaclab.utils.noise import GaussianNoiseCfg, UniformNoiseCfg
 
 from bridge_env import mdp
-from bridge_rl.algorithms import Proprio, UniversalCriticObs
+from bridge_rl.algorithms import UniversalProprioWithPhase, UniversalCriticObs
 from bridge_rl.algorithms.ppo import PPOCfg
 from . import OdomPPO
 
@@ -32,7 +32,7 @@ class Priv(ObservationGroupCfg):
 
 @configclass
 class OdomObservationsCfg:
-    proprio: Proprio = Proprio(enable_corruption=True)
+    proprio: UniversalProprioWithPhase = UniversalProprioWithPhase(enable_corruption=True)
 
     # depth: Depth = Depth(enable_corruption=True)
 

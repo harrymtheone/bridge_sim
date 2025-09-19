@@ -171,6 +171,7 @@ class T1FlatEnvCfg(BridgeEnvCfg):
                     'Left_Hip_Pitch', 'Left_Knee_Pitch', 'Left_Ankle_Pitch',
                     'Right_Hip_Pitch', 'Right_Knee_Pitch', 'Right_Ankle_Pitch',
                 ],
+                preserve_order=True,
             ),
             phase_command_name='phase',
             motion_scale=0.3,
