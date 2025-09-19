@@ -19,16 +19,9 @@ class MotionTermCfg(ManagerTermBaseCfg):
 
 
 class MotionGenerator(ManagerBase):
-    def __init__(
-            self,
-            cfg: MotionTermCfg | dict[str, MotionTermCfg],
-            env: ManagerBasedRLEnv
-    ):
+    def __init__(self, cfg: object, env: ManagerBasedRLEnv):
         self._term_names: list[str] = []
         self._term_cfgs: list[MotionTermCfg] = []
-
-        if isinstance(cfg, MotionTermCfg):
-            cfg = {'default': cfg}
 
         super().__init__(cfg, env)
 
@@ -59,8 +52,13 @@ class MotionGenerator(ManagerBase):
         return self._motion_buffer
 
     def _prepare_terms(self):
+        if isinstance(self.cfg, dict):
+            cfg = self.cfg
+        else:
+            cfg = self.cfg.__dict__
+
         # iterate over all the terms
-        for term_name, term_cfg in self.cfg.items():
+        for term_name, term_cfg in cfg.items():
             # check for non config
             if term_cfg is None:
                 raise TypeError(f"Motion term for {term_name} is None!")

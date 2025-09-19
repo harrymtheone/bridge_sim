@@ -6,8 +6,7 @@ from isaaclab.utils import configclass
 
 from bridge_env import mdp
 from bridge_env.envs import BridgeEnvCfg
-from bridge_env.managers.motion_generator import MotionTermCfg
-from . import T1SceneCfg, ActionsCfg, TerminationsCfg, EventCfg, CommandsCfg
+from . import T1SceneCfg, T1ActionsCfg, T1TerminationsCfg, T1EventCfg, T1MotionGeneratorCfg, T1CommandsCfg
 
 
 @configclass
@@ -160,28 +159,14 @@ class T1FlatEnvCfg(BridgeEnvCfg):
 
     curriculum = None
 
-    events = EventCfg()
+    events = T1EventCfg()
 
-    motion_generators = {'ref_motion': MotionTermCfg(
-        func=mdp.mo.stepper_with_air_ratio,
-        params=dict(
-            asset_cfg=SceneEntityCfg(
-                name='robot',
-                joint_names=[
-                    'Left_Hip_Pitch', 'Left_Knee_Pitch', 'Left_Ankle_Pitch',
-                    'Right_Hip_Pitch', 'Right_Knee_Pitch', 'Right_Ankle_Pitch',
-                ],
-                preserve_order=True,
-            ),
-            phase_command_name='phase',
-            motion_scale=0.3,
-        ),
-    )}
+    motion_generators = T1MotionGeneratorCfg()
 
-    commands = CommandsCfg()
+    commands = T1CommandsCfg()
 
-    actions = ActionsCfg()
+    actions = T1ActionsCfg()
 
     rewards = RewardsCfg()
 
-    terminations = TerminationsCfg()
+    terminations = T1TerminationsCfg()

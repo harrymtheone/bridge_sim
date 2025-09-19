@@ -11,7 +11,7 @@ from isaaclab.sim import SimulationCfg
 from isaaclab.utils import configclass
 
 from bridge_env import mdp
-from . import T1SceneCfg, ActionsCfg, TerminationsCfg, EventCfg, CommandsCfg
+from . import T1SceneCfg, T1ActionsCfg, T1TerminationsCfg, T1EventCfg, T1CommandsCfg
 
 
 @configclass
@@ -215,11 +215,11 @@ class T1FullEnv1Cfg(ManagerBasedRLEnvCfg):
         "terrain_levels": CurriculumTermCfg(func=mdp.curr.terrain_levels_vel)
     }
 
-    events = EventCfg()
+    events = T1EventCfg()
 
-    commands = CommandsCfg()
+    commands = T1CommandsCfg()
 
-    actions = ActionsCfg()
+    actions = T1ActionsCfg()
 
     rewards = dict(
         # ##################################### gait #####################################
@@ -348,4 +348,4 @@ class T1FullEnv1Cfg(ManagerBasedRLEnvCfg):
         # "dof_pos_limits": RewardTermCfg(func=mdp.joint_pos_limits, weight=-10.0)
     )
 
-    terminations = TerminationsCfg()
+    terminations = T1TerminationsCfg()

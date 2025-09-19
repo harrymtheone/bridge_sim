@@ -16,6 +16,7 @@ from isaaclab.terrains import TerrainImporterCfg
 from isaaclab.utils import configclass
 
 from bridge_env import BRIDGE_ROBOTS_DIR, mdp
+from bridge_env.managers.motion_generator import MotionTermCfg
 from bridge_env.sensors.ray_caster import FootholdRayCasterCfg
 from bridge_env.sensors.ray_caster.patterns import GridPatternV2Cfg
 
@@ -184,12 +185,12 @@ class T1SceneCfg(InteractiveSceneCfg):
 
 
 @configclass
-class ActionsCfg:
+class T1ActionsCfg:
     joint_pos = mdp.act.JointPositionActionCfg(asset_name="robot", joint_names=[".*"], scale=0.5, use_default_offset=True)
 
 
 @configclass
-class TerminationsCfg:
+class T1TerminationsCfg:
     time_out = TerminationTermCfg(func=mdp.term.time_out, time_out=True)
 
     base_contact = TerminationTermCfg(
@@ -218,7 +219,7 @@ class TerminationsCfg:
 
 
 @configclass
-class EventCfg:
+class T1EventCfg:
     # startup
     randomize_physics_material = EventTermCfg(
         func=mdp.evt.randomize_rigid_body_material,
@@ -330,7 +331,26 @@ class EventCfg:
 
 
 @configclass
-class CommandsCfg:
+class T1MotionGeneratorCfg:
+    ref_motion = MotionTermCfg(
+        func=mdp.mo.stepper_with_air_ratio,
+        params=dict(
+            asset_cfg=SceneEntityCfg(
+                name='robot',
+                joint_names=[
+                    'Left_Hip_Pitch', 'Left_Knee_Pitch', 'Left_Ankle_Pitch',
+                    'Right_Hip_Pitch', 'Right_Knee_Pitch', 'Right_Ankle_Pitch',
+                ],
+                preserve_order=True,
+            ),
+            phase_command_name='phase',
+            motion_scale=0.3,
+        ),
+    )
+
+
+@configclass
+class T1CommandsCfg:
     base_velocity = mdp.cmd.UniformVelocityCommandCfg(
         asset_name="robot",
         resampling_time_range=(5.0, 10.0),
