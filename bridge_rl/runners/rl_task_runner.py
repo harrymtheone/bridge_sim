@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 import torch
 from torch.utils.tensorboard import SummaryWriter
 
-from isaaclab.envs import ManagerBasedRLEnv
+from bridge_env.envs import BridgeEnv
 from bridge_rl.utils import EpisodeLogger
 
 if TYPE_CHECKING:
@@ -21,17 +21,22 @@ class RLRunner:
         return self.env.device
 
     def __init__(self, cfg: RLTaskCfg):
-        cfg.validate()
+        cfg.validate()  # noqa
         self.cfg = cfg
 
-        self.env = ManagerBasedRLEnv(cfg=cfg.env)
+        self.env = BridgeEnv(cfg=cfg.env)
 
-        # Create algorithm
-        self.algorithm = cfg.algorithm.class_type(cfg.algorithm, env=self.env)
+        # observations, infos = self.env.reset()
+        #
+        # while True:
+        #     observations, rewards, terminated, timeouts, infos = self.env.step(torch.zeros(self.env.num_envs, 13, device=self.device))
 
-        # TODO --------------------------
-        self.algorithm.storage.register_data_buffer('use_estimated_values', data_shape=(1,), dtype=torch.bool)
-        # TODO --------------------------
+        # # Create algorithm
+        # self.algorithm = cfg.algorithm.class_type(cfg.algorithm, env=self.env)
+        #
+        # # TODO --------------------------
+        # self.algorithm.storage.register_data_buffer('use_estimated_values', data_shape=(1,), dtype=torch.bool)
+        # # TODO --------------------------
 
         # Timing tracking
         self.collection_time = -1

@@ -3,9 +3,9 @@ from __future__ import annotations
 from dataclasses import MISSING
 from typing import TYPE_CHECKING
 
-from isaaclab.envs import ManagerBasedRLEnvCfg
 from isaaclab.utils import configclass
 
+from bridge_env.envs import BridgeEnvCfg
 from . import RLRunner
 
 if TYPE_CHECKING:
@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 class RLTaskCfg:
     class_type: type = RLRunner
 
-    env: ManagerBasedRLEnvCfg = MISSING
+    env: BridgeEnvCfg = MISSING
 
     algorithm: PPOCfg = MISSING
 

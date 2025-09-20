@@ -20,8 +20,6 @@ from isaaclab.terrains import TerrainImporterCfg
 from isaaclab.utils import configclass
 
 from bridge_env import BRIDGE_ROBOTS_DIR, mdp
-from bridge_env.sensors.ray_caster import FootholdRayCasterCfg
-# from bridge_env.sensors.height_field_reader.patterns import GridPatternV2Cfg
 
 
 @configclass

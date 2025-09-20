@@ -1,3 +1,3 @@
-from .foothold_raycaster import FootholdRayCaster
+from .raycaster_v2 import RayCasterV2
 
-from .foothold_raycaster_cfg import FootholdRayCasterCfg
+from .raycaster_v2_cfg import RayCasterV2Cfg

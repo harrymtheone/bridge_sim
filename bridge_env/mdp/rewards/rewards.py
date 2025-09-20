@@ -9,7 +9,7 @@ from isaaclab.utils.math import euler_xyz_from_quat
 
 from bridge_env.envs import BridgeEnv
 from bridge_env.mdp.commands.phase_command import PhaseCommand
-from bridge_env.sensors.ray_caster import FootholdRayCaster
+from bridge_env.sensors.ray_caster import RayCasterV2
 
 """
 Velocity-tracking rewards.
@@ -96,8 +96,8 @@ def feet_clearance_masked(
         sensor_r_cfg: SceneEntityCfg,
         feet_height_target: float,
 ) -> torch.Tensor:
-    scanner_l: FootholdRayCaster = env.scene.sensors[sensor_l_cfg.name]
-    scanner_r: FootholdRayCaster = env.scene.sensors[sensor_r_cfg.name]
+    scanner_l: RayCasterV2 = env.scene.sensors[sensor_l_cfg.name]
+    scanner_r: RayCasterV2 = env.scene.sensors[sensor_r_cfg.name]
     command = env.command_manager.get_term(command_name)
 
     if not isinstance(command, PhaseCommand):
@@ -189,8 +189,8 @@ def foothold(
         foothold_contact_thresh: float = 0.01,
         contact_force_threshold: float = 5.0,
 ) -> torch.Tensor:
-    scanner_l: FootholdRayCaster = env.scene.sensors[scanner_l_cfg.name]
-    scanner_r: FootholdRayCaster = env.scene.sensors[scanner_r_cfg.name]
+    scanner_l: RayCasterV2 = env.scene.sensors[scanner_l_cfg.name]
+    scanner_r: RayCasterV2 = env.scene.sensors[scanner_r_cfg.name]
     contact_sensor: ContactSensor = env.scene.sensors[contact_sensor_cfg.name]
 
     foothold_pts_height = torch.stack([

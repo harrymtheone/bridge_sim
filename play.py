@@ -35,18 +35,19 @@ def main(args):
     args.resume = False
 
     task_cfg = all_tasks[args.task]()
-
-    task_cfg.env_cfg.scene.num_envs = 2
-    if isinstance(task_cfg.env_cfg.scene.ground, TerrainImporterCfg):
-        task_cfg.env_cfg.scene.ground.terrain_generator.num_rows = 4
-        task_cfg.env_cfg.scene.ground.terrain_generator.num_cols = 4
-
-    task_cfg.env_cfg.sim.device = args.device
     task_cfg.logger_backend = None
+    task_cfg.log_root_dir = "logs"
+    task_cfg.project_name = args.proj_name
+    task_cfg.exptid = args.exptid
 
-    runner = task_cfg.class_type(task_cfg, args)
+    task_cfg.env.scene.num_envs = 2
+    if isinstance(task_cfg.env.scene.ground, TerrainImporterCfg):
+        task_cfg.env.scene.ground.terrain_generator.num_rows = 4
+        task_cfg.env.scene.ground.terrain_generator.num_cols = 4
+
+    runner = task_cfg.class_type(task_cfg)
     env = runner.env
-    runner.algorithm.eval()
+    # runner.algorithm.eval()
 
     observations, infos = env.reset()
 
@@ -54,8 +55,8 @@ def main(args):
         while True:
             observations['use_estimated_values'] = torch.zeros(env.num_envs, dtype=torch.bool, device=env.device)  # TODO: not finished here?!
 
-            rtn = runner.algorithm.play_act(observations)
-            actions = rtn['actions']
+            # rtn = runner.algorithm.play_act(observations)
+            # actions = rtn['actions']
 
             # actions = {'action': rtn['actions'] * 0.}
 
