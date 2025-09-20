@@ -5,7 +5,6 @@ def get_arg_parser():
     parser.add_argument('--proj_name', type=str, required=True)
     parser.add_argument('--task', type=str, required=True)
     parser.add_argument('--exptid', type=str, required=True)
-    parser.add_argument('--resumeid', type=str)
     parser.add_argument('--checkpoint', type=str)
 
     parser.add_argument('--log_root', type=str, default='logs')
@@ -30,24 +29,26 @@ def main(args):
     import torch
     from isaaclab.terrains import TerrainImporterCfg
     from rich.live import Live
+    from bridge_rl.runners import RLTaskCfg
 
     from tasks import all_tasks
-    args.resume = False
 
-    task_cfg = all_tasks[args.task]()
+    task_cfg: RLTaskCfg = all_tasks[args.task]()
     task_cfg.logger_backend = None
     task_cfg.log_root_dir = "logs"
     task_cfg.project_name = args.proj_name
     task_cfg.exptid = args.exptid
+    task_cfg.resume_id = args.exptid
+    task_cfg.checkpoint = getattr(args, "checkpoint", -1)
 
-    task_cfg.env.scene.num_envs = 1
+    task_cfg.env.scene.num_envs = 4
     if isinstance(task_cfg.env.scene.terrain, TerrainImporterCfg):
         task_cfg.env.scene.terrain.terrain_generator.num_rows = 4
         task_cfg.env.scene.terrain.terrain_generator.num_cols = 4
 
     runner = task_cfg.class_type(task_cfg)
     env = runner.env
-    # runner.algorithm.eval()
+    runner.algorithm.eval()
 
     observations, infos = env.reset()
 
@@ -55,12 +56,9 @@ def main(args):
         while True:
             observations['use_estimated_values'] = torch.zeros(env.num_envs, dtype=torch.bool, device=env.device)  # TODO: not finished here?!
 
-            # rtn = runner.algorithm.play_act(observations)
-            # actions = rtn['actions']
+            actions = runner.algorithm.play_act(observations)
 
-            # actions = {'action': rtn['actions'] * 0.}
-
-            actions = env.motion_generator.get_motion('ref_motion') - env.scene['robot'].data.default_joint_pos
+            # actions = {"joint_pos": env.motion_generator.get_motion('ref_motion') - env.scene['robot'].data.default_joint_pos}
 
             # actions = torch.zeros_like(actions)
             # phase = self.env.command_manager.default_term.get_phase()

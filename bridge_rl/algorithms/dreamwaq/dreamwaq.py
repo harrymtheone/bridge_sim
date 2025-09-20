@@ -105,6 +105,13 @@ class DreamWaQ(PPO):
             generator = self.storage.mini_batch_generator(self.cfg.num_mini_batches, self.cfg.num_learning_epochs)
 
         for batch in generator:
+            # Extract batch data for actor forward pass
+            observations = batch['observations']
+            hidden_states = batch['hidden_states'] if self.actor.is_recurrent else None
+
+            # Forward pass through actor
+            self.actor.train_act(observations, hidden_states=hidden_states)
+
             # Compute losses
             kl_mean, surrogate_loss, value_loss, entropy_loss = self._compute_ppo_loss(batch)
 
@@ -177,8 +184,7 @@ class DreamWaQ(PPO):
 
     def _compute_symmetry_loss(self, obs_batch, hidden_states_batch, mask_batch):
         """Compute symmetry loss for robust policy learning."""
-        # Get original action mean
-        self.actor.train_act(obs_batch, hidden_states=hidden_states_batch)
+        # Get original action mean (use provided actor_output if available)
         action_mean_original = self.actor.action_mean.detach()
 
         # Create mirrored observations
@@ -232,7 +238,7 @@ class DreamWaQ(PPO):
 
     def play_act(self, obs, **kwargs):
         """Generate actions for play/evaluation."""
-        return {'actions': self.actor.act(obs, eval_=True, **kwargs)}
+        return {'joint_pos': self.actor.act(obs, eval_=True, **kwargs)}
 
     def save(self) -> Dict[str, Any]:
         """Save model state."""

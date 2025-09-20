@@ -186,7 +186,7 @@ class T1SceneCfg(InteractiveSceneCfg):
 
 @configclass
 class T1ActionsCfg:
-    action = mdp.act.JointPositionActionCfg(asset_name="robot", joint_names=[".*"], scale=0.5, use_default_offset=True)
+    joint_pos = mdp.act.JointPositionActionCfg(asset_name="robot", joint_names=[".*"], scale=0.5, use_default_offset=True)
 
 
 @configclass

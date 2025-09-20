@@ -54,7 +54,7 @@ class PPO:
         # Store transition data
         self._store_transition_data(actions, values, **kwargs)
 
-        return {'action': actions}  # TODO: after add support for single action
+        return {'joint_pos': actions}  # TODO: after add support for single action
 
     def _store_observations(self, observations: dict[str, torch.Tensor]):
         self.storage.add_transitions('observations', observations)
@@ -90,7 +90,6 @@ class PPO:
         with torch.autocast(str(self.device), torch.float16, enabled=self.cfg.use_amp):
             # Extract batch data
             observations = batch['observations']
-            hidden_states = batch['hidden_states'] if self.actor.is_recurrent else None
             masks = batch['masks'].squeeze(-1) if self.actor.is_recurrent else slice(None)
             actions = batch['actions']
             target_values = batch['values']
@@ -99,9 +98,6 @@ class PPO:
             old_mu = batch['action_mean']
             old_sigma = batch['action_sigma']
             old_actions_log_prob = batch['actions_log_prob']
-
-            # Forward pass through actor
-            self.actor.train_act(observations, hidden_states=hidden_states)
 
             # Compute KL divergence for adaptive learning rate
             if self.cfg.learning_rate_schedule == 'adaptive':
