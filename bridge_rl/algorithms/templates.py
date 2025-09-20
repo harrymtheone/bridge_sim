@@ -12,7 +12,7 @@ class UniversalProprio(ObservationGroupCfg):
     commands = ObservationTermCfg(func=mdp.obs.generated_commands, params={"command_name": "base_velocity"})
     joint_pos = ObservationTermCfg(func=mdp.obs.joint_pos_rel, noise=UniformNoiseCfg(n_min=-0.01, n_max=0.01))
     joint_vel = ObservationTermCfg(func=mdp.obs.joint_vel_rel, noise=UniformNoiseCfg(n_min=-1.5, n_max=1.5))
-    last_action = ObservationTermCfg(func=mdp.obs.last_action)
+    last_action = ObservationTermCfg(func=mdp.obs.last_action_v2)
 
 
 @configclass
@@ -25,7 +25,7 @@ class UniversalCriticObs(ObservationGroupCfg):
     commands = ObservationTermCfg(func=mdp.obs.generated_commands, params={"command_name": "base_velocity"})
     joint_pos = ObservationTermCfg(func=mdp.obs.joint_pos_rel)
     joint_vel = ObservationTermCfg(func=mdp.obs.joint_vel_rel)
-    last_action = ObservationTermCfg(func=mdp.obs.last_action)
+    last_action = ObservationTermCfg(func=mdp.obs.last_action_v2)
     # foot_scan_l= ObservationTermCfg(func=mdp.obs.foothold_1d, params=MISSING)
     # foot_scan_r = ObservationTermCfg(func=mdp.obs.foothold_1d, params=MISSING)
     # feet_is_contact = ObservationTermCfg(func=mdp.obs.link_is_contact, params=MISSING)

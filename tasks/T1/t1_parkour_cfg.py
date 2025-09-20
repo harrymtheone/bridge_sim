@@ -468,7 +468,7 @@ class RewardsCfg:
     ang_vel_xy = RewardTermCfg(func=mdp.rew.ang_vel_xy_l2, weight=-0.05)
 
     # ##################################### energy #####################################
-    action_rate = RewardTermCfg(func=mdp.rew.action_rate_l2, weight=-0.01)
+    action_rate = RewardTermCfg(func=mdp.rew.action_rate_l2_v2, weight=-0.01)
     dof_torques = RewardTermCfg(func=mdp.rew.joint_torques_l2, weight=-1.0e-5)
     dof_acc = RewardTermCfg(func=mdp.rew.joint_acc_l2, weight=-2.5e-7)
 

@@ -17,13 +17,15 @@ import omni.physics.tensors.impl.api as physx
 import torch
 import warp as wp
 from isaaclab.markers import VisualizationMarkers
-from isaaclab.sensors import SensorBase, RayCasterData
+from isaaclab.sensors import SensorBase
 from isaaclab.terrains.trimesh.utils import make_plane
 from isaaclab.utils.math import convert_quat, quat_apply, quat_apply_yaw
 from isaaclab.utils.warp import convert_to_warp_mesh, raycast_mesh
 from isaacsim.core.prims import XFormPrim
 from isaacsim.core.simulation_manager import SimulationManager
 from pxr import UsdGeom, UsdPhysics
+
+from . import RayCasterDataV2
 
 if TYPE_CHECKING:
     from . import RayCasterV2Cfg
@@ -67,7 +69,7 @@ class RayCasterV2(SensorBase):
         # Initialize base class
         super().__init__(cfg)
         # Create empty variables for storing output data
-        self._data = RayCasterData()
+        self._data = RayCasterDataV2()
         # the warp meshes used for raycasting.
         self.meshes: dict[str, wp.Mesh] = {}
 
@@ -92,7 +94,7 @@ class RayCasterV2(SensorBase):
         return self._view.count
 
     @property
-    def data(self) -> RayCasterData:
+    def data(self) -> RayCasterDataV2:
         # update sensors if needed
         self._update_outdated_buffers()
         # return the data
@@ -281,7 +283,7 @@ class RayCasterV2(SensorBase):
             raise RuntimeError(f"Unsupported ray_alignment type: {self.cfg.ray_alignment}.")
 
         # ray cast and store the hits
-        # TODO: Make this work for multiple meshes?
+        self._data.ray_starts_w = ray_starts_w
         self._data.ray_hits_w[env_ids] = raycast_mesh(
             ray_starts_w,
             ray_directions_w,

@@ -143,7 +143,7 @@ class T1SceneCfg(InteractiveSceneCfg):
         debug_vis=False,
     )
 
-    scan_scanner = RayCasterV2Cfg(
+    scanner = RayCasterV2Cfg(
         prim_path="{ENV_REGEX_NS}/Robot/Trunk",
         mesh_prim_paths=["/World/defaultGroundPlane"],
         pattern_cfg=GridPatternV2Cfg(
@@ -165,7 +165,7 @@ class T1SceneCfg(InteractiveSceneCfg):
             shape=(10, 5),
             size=(0.22, 0.1),
         ),
-        offset=RayCasterCfg.OffsetCfg(pos=(0.01, 0., -0.02)),
+        offset=RayCasterCfg.OffsetCfg(pos=(0.01, 0., 0.)),
         max_distance=0.5,
         ray_alignment="base_v",
         debug_vis=False,
@@ -177,7 +177,7 @@ class T1SceneCfg(InteractiveSceneCfg):
             shape=(10, 5),
             size=(0.22, 0.1),
         ),
-        offset=RayCasterCfg.OffsetCfg(pos=(0.01, 0., -0.02)),
+        offset=RayCasterCfg.OffsetCfg(pos=(0.01, 0., 0.)),
         max_distance=0.5,
         ray_alignment="base_v",
         debug_vis=False,
@@ -186,7 +186,7 @@ class T1SceneCfg(InteractiveSceneCfg):
 
 @configclass
 class T1ActionsCfg:
-    joint_pos = mdp.act.JointPositionActionCfg(asset_name="robot", joint_names=[".*"], scale=0.5, use_default_offset=True)
+    action = mdp.act.JointPositionActionCfg(asset_name="robot", joint_names=[".*"], scale=0.5, use_default_offset=True)
 
 
 @configclass

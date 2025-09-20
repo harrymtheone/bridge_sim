@@ -31,16 +31,17 @@ class RewardsCfg:
         )
     )
 
-    # feet_clearance = RewardTermCfg(
-    #     func=mdp.rew.feet_clearance_masked,
-    #     weight=0.6,
-    #     params=dict(
-    #         command_name="phase",
-    #         sensor_l_cfg=SceneEntityCfg("left_feet_scanner"),
-    #         sensor_r_cfg=SceneEntityCfg("right_feet_scanner"),
-    #         feet_height_target=0.04
-    #     )
-    # )
+    feet_clearance = RewardTermCfg(
+        func=mdp.rew.feet_clearance_masked,
+        weight=0.6,
+        params=dict(
+            command_name="phase",
+            sensor_l_cfg=SceneEntityCfg("left_feet_scanner"),
+            sensor_r_cfg=SceneEntityCfg("right_feet_scanner"),
+            feet_height_correction=-0.03,
+            feet_height_target=0.04,
+        )
+    )
 
     # feet_air_time = RewardTermCfg(
     #     func=mdp.feet_air_time,
@@ -129,7 +130,7 @@ class RewardsCfg:
     ang_vel_xy = RewardTermCfg(func=mdp.rew.ang_vel_xy_l2, weight=-0.05)
 
     # ##################################### energy #####################################
-    action_rate = RewardTermCfg(func=mdp.rew.action_rate_l2, weight=-0.01)
+    action_rate = RewardTermCfg(func=mdp.rew.action_rate_l2_v2, weight=-0.01)
     dof_torques = RewardTermCfg(func=mdp.rew.joint_torques_l2, weight=-1.0e-5)
     dof_acc = RewardTermCfg(func=mdp.rew.joint_acc_l2, weight=-2.5e-7)
 
@@ -179,6 +180,6 @@ class T1DreamWaqFlatTaskCfg(RLTaskCfg):
     env: T1FlatEnvCfg = T1FlatEnvCfg()
 
     algorithm = DreamWaQCfg()
-    # algorithm.observations.scan.scan = ObservationTermCfg(func=mdp.obs.height_scan, params={})
+    algorithm.observations.scan.scan = ObservationTermCfg(func=mdp.obs.height_scan, params={"sensor_cfg": SceneEntityCfg("scanner")})
 
     max_iterations: int = 10000

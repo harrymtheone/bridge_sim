@@ -22,7 +22,7 @@ class DreamWaQObservationsCfg:
         flatten_history_dim=False,
     )
 
-    # scan: Scan = Scan()
+    scan: Scan = Scan()
 
 
 @configclass

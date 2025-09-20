@@ -26,17 +26,12 @@ class RLRunner:
 
         self.env = BridgeEnv(cfg=cfg.env)
 
-        # observations, infos = self.env.reset()
-        #
-        # while True:
-        #     observations, rewards, terminated, timeouts, infos = self.env.step(torch.zeros(self.env.num_envs, 13, device=self.device))
+        # Create algorithm
+        self.algorithm = cfg.algorithm.class_type(cfg.algorithm, env=self.env)
 
-        # # Create algorithm
-        # self.algorithm = cfg.algorithm.class_type(cfg.algorithm, env=self.env)
-        #
-        # # TODO --------------------------
-        # self.algorithm.storage.register_data_buffer('use_estimated_values', data_shape=(1,), dtype=torch.bool)
-        # # TODO --------------------------
+        # TODO --------------------------
+        self.algorithm.storage.register_data_buffer('use_estimated_values', data_shape=(1,), dtype=torch.bool)
+        # TODO --------------------------
 
         # Timing tracking
         self.collection_time = -1
@@ -84,8 +79,6 @@ class RLRunner:
             self.learn_time = time.time() - start_time
 
             self.log(infos, update_infos)
-
-            self.env.reward_manager.update_curriculum(self.cur_it)
 
             if self.cur_it % self.cfg.save_interval == 0:
                 self.save(os.path.join(self.model_dir, f'model_{self.cur_it}.pt'))

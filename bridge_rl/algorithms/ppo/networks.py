@@ -196,7 +196,7 @@ class PPOCritic(BaseCritic):
         if obs['critic_obs'].ndim == 3:
             # Non-recurrent case
             priv_latent = self.priv_enc(obs['critic_obs'].transpose(1, 2))
-            scan_enc = self.scan_enc(obs['scan_edge'].flatten(1))
+            scan_enc = self.scan_enc(obs['scan'].flatten(1))
             return self.critic(torch.cat([priv_latent, scan_enc], dim=1))
         else:
             return recurrent_wrapper(self.evaluate, obs)

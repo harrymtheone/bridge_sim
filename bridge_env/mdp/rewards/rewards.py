@@ -94,6 +94,7 @@ def feet_clearance_masked(
         command_name: str,
         sensor_l_cfg: SceneEntityCfg,
         sensor_r_cfg: SceneEntityCfg,
+        feet_height_correction: float,
         feet_height_target: float,
 ) -> torch.Tensor:
     scanner_l: RayCasterV2 = env.scene.sensors[sensor_l_cfg.name]
@@ -105,8 +106,8 @@ def feet_clearance_masked(
                         f" Got [{command_name}] with type [{type(command)}]")
 
     foothold_pts_height = torch.stack([
-        scanner_l.ray_starts_w[:, :, 2] - scanner_l.data.ray_hits_w[:, :, 2] + scanner_l.cfg.reading_bias_z,
-        scanner_r.ray_starts_w[:, :, 2] - scanner_r.data.ray_hits_w[:, :, 2] + scanner_r.cfg.reading_bias_z,
+        scanner_l.data.ray_starts_w[:, :, 2] - scanner_l.data.ray_hits_w[:, :, 2] + feet_height_correction,
+        scanner_r.data.ray_starts_w[:, :, 2] - scanner_r.data.ray_hits_w[:, :, 2] + feet_height_correction,
     ], dim=1)
 
     rew = (foothold_pts_height.mean(dim=2) / feet_height_target).clip(min=-1, max=1)
@@ -204,3 +205,23 @@ def foothold(
     is_contact = torch.max(torch.norm(net_contact_forces[:, :, contact_sensor_cfg.body_ids], dim=-1), dim=1)[0] > contact_force_threshold
     rew = (1 - valid_foothold_perc) * is_contact
     return rew.sum(dim=1)
+
+
+"""
+Action penalties.
+"""
+
+
+def action_rate_l2_v2(env: ManagerBasedRLEnv, action_name: str | None = None) -> torch.Tensor:
+    """Penalize the rate of change of the actions using L2 squared kernel."""
+    action_dict = env.action_manager.action
+    prev_action_dict = env.action_manager.prev_action
+    
+    if action_name is None:
+        current_actions = torch.cat(list(action_dict.values()), dim=1)
+        prev_actions = torch.cat(list(prev_action_dict.values()), dim=1)
+        return torch.sum(torch.square(current_actions - prev_actions), dim=1)
+    else:
+        current_action = action_dict[action_name]
+        prev_action = prev_action_dict[action_name]
+        return torch.sum(torch.square(current_action - prev_action), dim=1)
