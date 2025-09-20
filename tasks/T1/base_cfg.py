@@ -126,7 +126,7 @@ class T1SceneCfg(InteractiveSceneCfg):
     """Configuration for actions T1 scene."""
 
     # ground plane
-    ground: AssetBaseCfg | TerrainImporterCfg = MISSING
+    terrain: AssetBaseCfg | TerrainImporterCfg = MISSING
 
     # lights
     dome_light = AssetBaseCfg(prim_path="/World/Light", spawn=sim_utils.DomeLightCfg(intensity=3000.0, color=(0.75, 0.75, 0.75)))

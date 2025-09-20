@@ -1,3 +1,5 @@
-from . height_reader import HeightReader
+from .height_field_reader_data import HeightFieldReaderData
 
-from .sensor_cfg import HeightReaderCfg
+from . height_field_reader import HeightFieldReader
+
+from .sensor_cfg import HeightFieldReaderCfg

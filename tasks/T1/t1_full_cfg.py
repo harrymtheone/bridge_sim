@@ -176,7 +176,7 @@ class T1FullEnv1Cfg(ManagerBasedRLEnvCfg):
         num_envs=4096,
         env_spacing=2.0,
 
-        ground=terrains.TerrainImporterCfg(
+        terrain=terrains.TerrainImporterCfg(
             prim_path="/World/defaultGroundPlane",
             terrain_generator=terrains.TerrainGeneratorCfg(
                 curriculum=True,

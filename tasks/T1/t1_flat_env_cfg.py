@@ -156,7 +156,7 @@ class T1FlatEnvCfg(BridgeEnvCfg):
     scene = T1SceneCfg(
         num_envs=4096,
         env_spacing=2.0,
-        ground=AssetBaseCfg(prim_path="/World/defaultGroundPlane", spawn=sim_utils.GroundPlaneCfg())
+        terrain=AssetBaseCfg(prim_path="/World/defaultGroundPlane", spawn=sim_utils.GroundPlaneCfg())
     )
 
     curriculum = None

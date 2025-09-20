@@ -41,9 +41,9 @@ def main(args):
     task_cfg.exptid = args.exptid
 
     task_cfg.env.scene.num_envs = 2
-    if isinstance(task_cfg.env.scene.ground, TerrainImporterCfg):
-        task_cfg.env.scene.ground.terrain_generator.num_rows = 4
-        task_cfg.env.scene.ground.terrain_generator.num_cols = 4
+    if isinstance(task_cfg.env.scene.terrain, TerrainImporterCfg):
+        task_cfg.env.scene.terrain.terrain_generator.num_rows = 4
+        task_cfg.env.scene.terrain.terrain_generator.num_cols = 4
 
     runner = task_cfg.class_type(task_cfg)
     env = runner.env
