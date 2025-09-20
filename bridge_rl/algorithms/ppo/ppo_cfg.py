@@ -1,6 +1,9 @@
-from dataclasses import MISSING
-from typing import Any, Literal
+from __future__ import annotations
 
+from dataclasses import MISSING
+from typing import Literal
+
+from isaaclab.managers import ObservationGroupCfg
 from isaaclab.utils import configclass
 
 from . import PPO
@@ -8,9 +11,9 @@ from . import PPO
 
 @configclass
 class PPOCfg:
-    observation_cfg: Any = MISSING
-
     class_type: type = PPO
+
+    observations: dict[str, ObservationGroupCfg] = MISSING
 
     # RL parameters
     gamma: float = 0.99

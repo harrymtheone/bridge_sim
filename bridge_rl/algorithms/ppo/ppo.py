@@ -6,7 +6,7 @@ import torch
 from isaaclab.envs import ManagerBasedRLEnv
 from torch.distributions import kl_divergence, Normal
 
-from ...storage import RolloutStorage
+from bridge_rl.storage import RolloutStorage
 
 if TYPE_CHECKING:
     from . import PPOCfg, BaseActor, BaseCritic
@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 
 class PPO:
     def __init__(self, cfg: PPOCfg, env: ManagerBasedRLEnv, **kwargs):
-        cfg.validate()
+        cfg.validate()  # noqa
 
         self.cfg = cfg
         self.env = env
@@ -38,23 +38,6 @@ class PPO:
     def _init_components(self):
         raise NotImplementedError
 
-    def _store_observations(self, observations: dict[str, torch.Tensor]):
-        self.storage.add_transitions('observations', observations)
-
-    def _store_hidden_states(self):
-        if self.actor.is_recurrent:
-            self.storage.add_transitions('hidden_states', self.actor.get_hidden_states())
-
-    def _generate_actions(self, obs, **kwargs):
-        raise NotImplementedError
-
-    def _store_transition_data(self, actions, values, **kwargs):
-        self.storage.add_transitions('values', values)
-        self.storage.add_transitions('actions', actions)
-        self.storage.add_transitions('actions_log_prob', self.actor.get_actions_log_prob(actions))
-        self.storage.add_transitions('action_mean', self.actor.action_mean)
-        self.storage.add_transitions('action_sigma', self.actor.action_std)
-
     def act(self, observations, **kwargs):
         # Store observations
         self._store_observations(observations)
@@ -71,7 +54,24 @@ class PPO:
         # Store transition data
         self._store_transition_data(actions, values, **kwargs)
 
-        return actions
+        return {'action': actions}  # TODO: after add support for single action
+
+    def _store_observations(self, observations: dict[str, torch.Tensor]):
+        self.storage.add_transitions('observations', observations)
+
+    def _store_hidden_states(self):
+        if self.actor.is_recurrent:
+            self.storage.add_transitions('hidden_states', self.actor.get_hidden_states())
+
+    def _generate_actions(self, obs, **kwargs):
+        raise NotImplementedError
+
+    def _store_transition_data(self, actions, values, **kwargs):
+        self.storage.add_transitions('values', values)
+        self.storage.add_transitions('actions', actions)
+        self.storage.add_transitions('actions_log_prob', self.actor.get_actions_log_prob(actions))
+        self.storage.add_transitions('action_mean', self.actor.action_mean)
+        self.storage.add_transitions('action_sigma', self.actor.action_std)
 
     def process_env_step(self, rewards, terminated, timeouts, infos, **kwargs):
         self.storage.add_transitions('rewards', rewards.unsqueeze(1))
@@ -192,11 +192,12 @@ class PPO:
         self.scaler.step(self.optimizer)
         self.scaler.update()
 
-    def play_act(self, obs, **kwargs):
+    def play_act(self, obs, eval_=True, **kwargs):
         """Generate actions for inference/evaluation.
         
         Args:
             obs: Observations
+            eval_: Sample action or use mean as action
             **kwargs: Additional arguments
             
         Returns:
@@ -264,5 +265,5 @@ class PPO:
         Args:
             dones: Boolean tensor indicating which environments are done
         """
-        if hasattr(self.actor, 'is_recurrent') and self.actor.is_recurrent:
+        if self.actor.is_recurrent:
             self.actor.reset(dones)

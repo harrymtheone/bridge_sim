@@ -21,7 +21,7 @@ from isaaclab.utils import configclass
 
 from bridge_env import BRIDGE_ROBOTS_DIR, mdp
 from bridge_env.sensors.ray_caster import FootholdRayCasterCfg
-from bridge_env.sensors.ray_caster.patterns import GridPatternV2Cfg
+# from bridge_env.sensors.height_field_reader.patterns import GridPatternV2Cfg
 
 
 @configclass
@@ -148,45 +148,45 @@ class T1SceneCfg(InteractiveSceneCfg):
         debug_vis=False,
     )
 
-    scan_scanner = RayCasterCfg(
-        prim_path="{ENV_REGEX_NS}/Robot/Trunk",
-        mesh_prim_paths=["/World/defaultGroundPlane"],
-        pattern_cfg=GridPatternV2Cfg(
-            shape=(32, 16),
-            size=(1.6, 0.8),
-        ),
-        offset=RayCasterCfg.OffsetCfg(pos=(0.3, 0., 0.)),
-        max_distance=2.0,
-        ray_alignment="yaw",
-        update_period=0.0,
-        history_length=0,
-        debug_vis=True,
-    )
-
-    left_feet_scanner = FootholdRayCasterCfg(
-        prim_path="{ENV_REGEX_NS}/Robot/left_foot_link",
-        mesh_prim_paths=["/World/defaultGroundPlane"],
-        pattern_cfg=GridPatternV2Cfg(
-            shape=(10, 5),
-            size=(0.22, 0.1),
-        ),
-        offset=FootholdRayCasterCfg.OffsetCfg(pos=(0.01, 0., -0.02)),
-        reading_bias_z=-0.01,
-        max_distance=0.5,
-        debug_vis=False,
-    )
-    right_feet_scanner = FootholdRayCasterCfg(
-        prim_path="{ENV_REGEX_NS}/Robot/right_foot_link",
-        mesh_prim_paths=["/World/defaultGroundPlane"],
-        pattern_cfg=GridPatternV2Cfg(
-            shape=(10, 5),
-            size=(0.22, 0.1),
-        ),
-        offset=FootholdRayCasterCfg.OffsetCfg(pos=(0.01, 0., -0.02)),
-        reading_bias_z=-0.01,
-        max_distance=0.5,
-        debug_vis=False,
-    )
+    # scan_scanner = RayCasterCfg(
+    #     prim_path="{ENV_REGEX_NS}/Robot/Trunk",
+    #     mesh_prim_paths=["/World/defaultGroundPlane"],
+    #     pattern_cfg=GridPatternV2Cfg(
+    #         shape=(32, 16),
+    #         size=(1.6, 0.8),
+    #     ),
+    #     offset=RayCasterCfg.OffsetCfg(pos=(0.3, 0., 0.)),
+    #     max_distance=2.0,
+    #     ray_alignment="yaw",
+    #     update_period=0.0,
+    #     history_length=0,
+    #     debug_vis=True,
+    # )
+    #
+    # left_feet_scanner = FootholdRayCasterCfg(
+    #     prim_path="{ENV_REGEX_NS}/Robot/left_foot_link",
+    #     mesh_prim_paths=["/World/defaultGroundPlane"],
+    #     pattern_cfg=GridPatternV2Cfg(
+    #         shape=(10, 5),
+    #         size=(0.22, 0.1),
+    #     ),
+    #     offset=FootholdRayCasterCfg.OffsetCfg(pos=(0.01, 0., -0.02)),
+    #     reading_bias_z=-0.01,
+    #     max_distance=0.5,
+    #     debug_vis=False,
+    # )
+    # right_feet_scanner = FootholdRayCasterCfg(
+    #     prim_path="{ENV_REGEX_NS}/Robot/right_foot_link",
+    #     mesh_prim_paths=["/World/defaultGroundPlane"],
+    #     pattern_cfg=GridPatternV2Cfg(
+    #         shape=(10, 5),
+    #         size=(0.22, 0.1),
+    #     ),
+    #     offset=FootholdRayCasterCfg.OffsetCfg(pos=(0.01, 0., -0.02)),
+    #     reading_bias_z=-0.01,
+    #     max_distance=0.5,
+    #     debug_vis=False,
+    # )
 
 
 @configclass

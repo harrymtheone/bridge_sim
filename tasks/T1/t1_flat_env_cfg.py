@@ -1,11 +1,13 @@
 from isaaclab import sim as sim_utils
 from isaaclab.assets import AssetBaseCfg
-from isaaclab.managers import SceneEntityCfg, RewardTermCfg
+from isaaclab.managers import SceneEntityCfg, RewardTermCfg, ObservationTermCfg
 from isaaclab.sim import SimulationCfg
 from isaaclab.utils import configclass
 
 from bridge_env import mdp
 from bridge_env.envs import BridgeEnvCfg
+from bridge_rl.algorithms import DreamWaQCfg
+from bridge_rl.runners import RLTaskCfg
 from . import T1SceneCfg, T1ActionsCfg, T1TerminationsCfg, T1EventCfg, T1MotionGeneratorCfg, T1CommandsCfg
 
 
@@ -29,16 +31,16 @@ class RewardsCfg:
         )
     )
 
-    feet_clearance = RewardTermCfg(
-        func=mdp.rew.feet_clearance_masked,
-        weight=0.6,
-        params=dict(
-            command_name="phase",
-            sensor_l_cfg=SceneEntityCfg("left_feet_scanner"),
-            sensor_r_cfg=SceneEntityCfg("right_feet_scanner"),
-            feet_height_target=0.04
-        )
-    )
+    # feet_clearance = RewardTermCfg(
+    #     func=mdp.rew.feet_clearance_masked,
+    #     weight=0.6,
+    #     params=dict(
+    #         command_name="phase",
+    #         sensor_l_cfg=SceneEntityCfg("left_feet_scanner"),
+    #         sensor_r_cfg=SceneEntityCfg("right_feet_scanner"),
+    #         feet_height_target=0.04
+    #     )
+    # )
 
     # feet_air_time = RewardTermCfg(
     #     func=mdp.feet_air_time,
@@ -99,15 +101,15 @@ class RewardsCfg:
         )
     )
 
-    foothold = RewardTermCfg(
-        func=mdp.rew.foothold,
-        weight=-0.1,
-        params=dict(
-            scanner_l_cfg=SceneEntityCfg("left_feet_scanner"),
-            scanner_r_cfg=SceneEntityCfg("right_feet_scanner"),
-            contact_sensor_cfg=SceneEntityCfg("contact_forces", body_names=".*foot.*"),
-        )
-    )
+    # foothold = RewardTermCfg(
+    #     func=mdp.rew.foothold,
+    #     weight=-0.1,
+    #     params=dict(
+    #         scanner_l_cfg=SceneEntityCfg("left_feet_scanner"),
+    #         scanner_r_cfg=SceneEntityCfg("right_feet_scanner"),
+    #         contact_sensor_cfg=SceneEntityCfg("contact_forces", body_names=".*foot.*"),
+    #     )
+    # )
 
     # ##################################### regularization #####################################
     joint_pos_deviation = RewardTermCfg(
@@ -170,3 +172,13 @@ class T1FlatEnvCfg(BridgeEnvCfg):
     rewards = RewardsCfg()
 
     terminations = T1TerminationsCfg()
+
+
+@configclass
+class T1DreamWaqFlatTaskCfg(RLTaskCfg):
+    env: T1FlatEnvCfg = T1FlatEnvCfg()
+
+    algorithm = DreamWaQCfg()
+    # algorithm.observations.scan.scan = ObservationTermCfg(func=mdp.obs.height_scan, params={})
+
+    max_iterations: int = 10000

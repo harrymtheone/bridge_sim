@@ -13,17 +13,16 @@ class OdomActor(BaseRecurrentActor):
     def __init__(
             self,
             prop_shape: tuple[int, ...],
-            priv_shape: tuple[int, ...],
             scan_shape: tuple[int, ...],
             actor_gru_hidden_size: int,
             actor_hidden_dims: tuple[int, ...],
             action_size: int,
+            activation=nn.ELU(),
     ):
         super().__init__(action_size=action_size)
-        activation = nn.ELU()
 
-        assert len(prop_shape) == 1 and len(priv_shape) == 1 and len(scan_shape) == 1
-        prop_size, priv_size, scan_size = prop_shape[0], priv_shape[0], scan_shape[0]
+        assert len(prop_shape) == 1 and len(scan_shape) == 1
+        prop_size, scan_size = prop_shape[0], scan_shape[0]
 
         # Encodes height scan or alternative reconstructed scan
         self.scan_encoder = make_linear_layers(
@@ -32,7 +31,7 @@ class OdomActor(BaseRecurrentActor):
         )
 
         # Belief encoder (GRU)
-        self.gru = nn.GRU(prop_size + 128 + priv_size, actor_gru_hidden_size, num_layers=1)
+        self.gru = nn.GRU(prop_size + 128, actor_gru_hidden_size, num_layers=1)
 
         # Actor MLP head
         self.actor = make_linear_layers(
@@ -45,39 +44,40 @@ class OdomActor(BaseRecurrentActor):
 
     def act(self, obs, eval_: bool = False, **kwargs):
         proprio = obs['proprio']
-        scan = obs['scan']
-        priv = obs['priv']
+        scan_edge = obs['scan_edge']
         use_estimated_values = obs['use_estimated_values']
 
         if torch.any(use_estimated_values):
-            scan_enc = torch.where(
-                use_estimated_values,
-                self.scan_encoder(hmap.flatten(1)),
-                self.scan_encoder(obs.scan.flatten(1)),
-            )
-            x = torch.where(
-                use_estimated_values,
-                torch.cat([proprio, scan_enc, priv], dim=1),
-                torch.cat([proprio, scan_enc, obs.priv_actor], dim=1),
-            )
+            raise NotImplementedError
+            # scan_enc = torch.where(
+            #     use_estimated_values,
+            #     self.scan_encoder(hmap.flatten(1)),
+            #     self.scan_encoder(obs.scan.flatten(1)),
+            # )
+            # x = torch.where(
+            #     use_estimated_values,
+            #     torch.cat([proprio, scan_enc, priv], dim=1),
+            #     torch.cat([proprio, scan_enc, obs.priv_actor], dim=1),
+            # )
         else:
-            scan_enc = self.scan_encoder(scan.flatten(1))
-            x = torch.cat([proprio, scan_enc, priv], dim=1)
+            scan_enc = self.scan_encoder(scan_edge)
+            x = torch.cat([proprio, scan_enc], dim=1)
 
         # GRU forward
         x, self.hidden_states = self.gru(x.unsqueeze(0), self.hidden_states)
         x = x.squeeze(0)
 
         mean = self.actor(x)
+
         if eval_:
             return mean
+
         self.distribution = Normal(mean, torch.exp(self.log_std))
         return self.distribution.sample()
 
     def train_act(self, obs, hidden_states=None, **kwargs):
         proprio = obs['proprio']
-        scan = obs['scan']
-        priv = obs['priv']
+        scan = obs['scan_edge']
         use_estimated_values = obs['use_estimated_values']
 
         if use_estimated_values is not None and torch.any(use_estimated_values):
@@ -93,7 +93,7 @@ class OdomActor(BaseRecurrentActor):
             )
         else:
             scan_enc = recurrent_wrapper(self.scan_encoder.forward, scan.flatten(2))
-            x = torch.cat([proprio, scan_enc, priv], dim=2)
+            x = torch.cat([proprio, scan_enc], dim=2)
 
         x, _ = self.gru(x, hidden_states)
         mean = recurrent_wrapper(self.actor.forward, x)

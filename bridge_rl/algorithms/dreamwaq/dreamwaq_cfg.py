@@ -4,9 +4,8 @@ from isaaclab.managers import ObservationGroupCfg, ObservationTermCfg
 from isaaclab.utils import configclass
 
 from bridge_env import mdp
-from bridge_rl.algorithms import PPOCfg
+from bridge_rl.algorithms import UniversalProprio, UniversalCriticObs, PPOCfg
 from . import DreamWaQ
-from ..templates import UniversalProprioWithPhase, UniversalCriticObs
 
 
 @configclass
@@ -15,7 +14,7 @@ class DreamWaQObservationsCfg:
     class Scan(ObservationGroupCfg):
         scan = ObservationTermCfg(func=mdp.obs.height_scan, params=MISSING)
 
-    proprio: UniversalProprioWithPhase = UniversalProprioWithPhase(enable_corruption=True)
+    proprio: UniversalProprio = UniversalProprio(enable_corruption=True)
 
     critic_obs: UniversalCriticObs = UniversalCriticObs(
         enable_corruption=True,
@@ -23,14 +22,14 @@ class DreamWaQObservationsCfg:
         flatten_history_dim=False,
     )
 
-    scan: Scan = Scan()
+    # scan: Scan = Scan()
 
 
 @configclass
 class DreamWaQCfg(PPOCfg):
-    observation_cfg: DreamWaQObservationsCfg = DreamWaQObservationsCfg()
-
     class_type: type = DreamWaQ
+
+    observations: DreamWaQObservationsCfg = DreamWaQObservationsCfg()
 
     # network parameters
     use_recurrent_policy: bool = True

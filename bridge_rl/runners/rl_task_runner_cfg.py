@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 from isaaclab.envs import ManagerBasedRLEnvCfg
 from isaaclab.utils import configclass
 
-from bridge_rl.runners.rl_task_runner import RLRunner
+from . import RLRunner
 
 if TYPE_CHECKING:
     from bridge_rl.algorithms import PPOCfg
@@ -14,9 +14,11 @@ if TYPE_CHECKING:
 
 @configclass
 class RLTaskCfg:
-    env_cfg: ManagerBasedRLEnvCfg = MISSING
+    class_type: type = RLRunner
 
-    algorithm_cfg: PPOCfg = MISSING
+    env: ManagerBasedRLEnvCfg = MISSING
+
+    algorithm: PPOCfg = MISSING
 
     max_iterations: int = MISSING
 
@@ -26,9 +28,17 @@ class RLTaskCfg:
 
     logger_backend: str = "tensorboard"
 
-    class_type: type = RLRunner
+    log_root_dir: str = MISSING
+
+    project_name: str = MISSING
+
+    exptid: str = MISSING
+
+    resume_id: str = None
+
+    checkpoint: int = -1
 
     def __post_init__(self):
-        self.env_cfg.observations = self.algorithm_cfg.observation_cfg
+        self.env.observations = self.algorithm.observations
 
-        self.algorithm_cfg.num_steps_per_update = self.num_steps_per_update
+        self.algorithm.num_steps_per_update = self.num_steps_per_update

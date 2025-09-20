@@ -18,7 +18,6 @@ from isaaclab.utils import configclass
 from bridge_env import BRIDGE_ROBOTS_DIR, mdp
 from bridge_env.managers.motion_generator import MotionTermCfg
 from bridge_env.sensors.ray_caster import FootholdRayCasterCfg
-from bridge_env.sensors.ray_caster.patterns import GridPatternV2Cfg
 
 
 @configclass
@@ -31,7 +30,7 @@ class T1ArticulationCfg(ArticulationCfg):
     spawn = UsdFileCfg(
         usd_path=os.path.join(BRIDGE_ROBOTS_DIR, "T1/legs/t1.usd"),
         rigid_props=RigidBodyPropertiesCfg(
-            disable_gravity=True,
+            # disable_gravity=True,
             # linear_damping=0.,
             # angular_damping=0.,
             max_linear_velocity=1000.,
@@ -44,7 +43,7 @@ class T1ArticulationCfg(ArticulationCfg):
     )
 
     init_state = ArticulationCfg.InitialStateCfg(
-        pos=(0., 0., 1.7),
+        pos=(0., 0., 0.7),
         rot=(1., 0., 0., 0.),  # w, x, y, z
         lin_vel=(0., 0., 0.),
         ang_vel=(0., 0., 0.),
@@ -143,45 +142,45 @@ class T1SceneCfg(InteractiveSceneCfg):
         debug_vis=False,
     )
 
-    scan_scanner = RayCasterCfg(
-        prim_path="{ENV_REGEX_NS}/Robot/Trunk",
-        mesh_prim_paths=["/World/defaultGroundPlane"],
-        pattern_cfg=GridPatternV2Cfg(
-            shape=(32, 16),
-            size=(1.6, 0.8),
-        ),
-        offset=RayCasterCfg.OffsetCfg(pos=(0.3, 0., 0.)),
-        max_distance=2.0,
-        ray_alignment="yaw",
-        update_period=0.0,
-        history_length=0,
-        debug_vis=True,
-    )
-
-    left_feet_scanner = FootholdRayCasterCfg(
-        prim_path="{ENV_REGEX_NS}/Robot/left_foot_link",
-        mesh_prim_paths=["/World/defaultGroundPlane"],
-        pattern_cfg=GridPatternV2Cfg(
-            shape=(10, 5),
-            size=(0.22, 0.1),
-        ),
-        offset=FootholdRayCasterCfg.OffsetCfg(pos=(0.01, 0., -0.02)),
-        reading_bias_z=-0.01,
-        max_distance=0.5,
-        debug_vis=False,
-    )
-    right_feet_scanner = FootholdRayCasterCfg(
-        prim_path="{ENV_REGEX_NS}/Robot/right_foot_link",
-        mesh_prim_paths=["/World/defaultGroundPlane"],
-        pattern_cfg=GridPatternV2Cfg(
-            shape=(10, 5),
-            size=(0.22, 0.1),
-        ),
-        offset=FootholdRayCasterCfg.OffsetCfg(pos=(0.01, 0., -0.02)),
-        reading_bias_z=-0.01,
-        max_distance=0.5,
-        debug_vis=False,
-    )
+    # scan_scanner = RayCasterCfg(
+    #     prim_path="{ENV_REGEX_NS}/Robot/Trunk",
+    #     mesh_prim_paths=["/World/defaultGroundPlane"],
+    #     pattern_cfg=GridPatternV2Cfg(
+    #         shape=(32, 16),
+    #         size=(1.6, 0.8),
+    #     ),
+    #     offset=RayCasterCfg.OffsetCfg(pos=(0.3, 0., 0.)),
+    #     max_distance=2.0,
+    #     ray_alignment="yaw",
+    #     update_period=0.0,
+    #     history_length=0,
+    #     debug_vis=True,
+    # )
+    #
+    # left_feet_scanner = FootholdRayCasterCfg(
+    #     prim_path="{ENV_REGEX_NS}/Robot/left_foot_link",
+    #     mesh_prim_paths=["/World/defaultGroundPlane"],
+    #     pattern_cfg=GridPatternV2Cfg(
+    #         shape=(10, 5),
+    #         size=(0.22, 0.1),
+    #     ),
+    #     offset=FootholdRayCasterCfg.OffsetCfg(pos=(0.01, 0., -0.02)),
+    #     reading_bias_z=-0.01,
+    #     max_distance=0.5,
+    #     debug_vis=False,
+    # )
+    # right_feet_scanner = FootholdRayCasterCfg(
+    #     prim_path="{ENV_REGEX_NS}/Robot/right_foot_link",
+    #     mesh_prim_paths=["/World/defaultGroundPlane"],
+    #     pattern_cfg=GridPatternV2Cfg(
+    #         shape=(10, 5),
+    #         size=(0.22, 0.1),
+    #     ),
+    #     offset=FootholdRayCasterCfg.OffsetCfg(pos=(0.01, 0., -0.02)),
+    #     reading_bias_z=-0.01,
+    #     max_distance=0.5,
+    #     debug_vis=False,
+    # )
 
 
 @configclass
@@ -287,27 +286,28 @@ class T1EventCfg:
         ),
     )
 
-    randomize_joint_parameters = EventTermCfg(
+    randomize_joint_friction = EventTermCfg(
         func=mdp.evt.randomize_joint_parameters,
         mode="reset",
         params=dict(
             asset_cfg=SceneEntityCfg("robot", joint_names=".*"),
             friction_distribution_params=(0., 2.),
             armature_distribution_params=(0.01, 0.05),
-            distribution="log_uniform",
+            distribution="uniform",
             operation="abs",
         ),
     )
 
-    # randomize_joint_armature = EventTermCfg(
-    #     func=mdp.evt.randomize_joint_parameters,
-    #     mode="reset",
-    #     params=dict(
-    #         asset_cfg=SceneEntityCfg("robot", joint_names=".*"),
-    #         armature_distribution_params=(0.001, 0.05),
-    #         distribution="log_uniform",
-    #     ),
-    # )
+    randomize_joint_armature = EventTermCfg(
+        func=mdp.evt.randomize_joint_parameters,
+        mode="reset",
+        params=dict(
+            asset_cfg=SceneEntityCfg("robot", joint_names=".*"),
+            armature_distribution_params=(0.01, 0.05),
+            distribution="log_uniform",
+            operation="abs",
+        ),
+    )
 
     # interval
     push_robot = EventTermCfg(

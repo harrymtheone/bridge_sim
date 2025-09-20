@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import torch
 
 
@@ -98,8 +100,8 @@ class RolloutStorage:
             'action_sigma': DataBuf(self.storage_length, self.num_envs, (num_actions,), dtype, self.device),
         }
 
-    def register_data_buffer(self, name, data_shape: int | tuple[int, ...]):
-        raise NotImplementedError
+    def register_data_buffer(self, name, data_shape: int | tuple[int, ...], dtype: torch.dtype):
+        self.storage[name] = DataBuf(self.storage_length, self.num_envs, data_shape, dtype, self.device)
 
     def register_hidden_state_buffer(self, name, num_layers: int, hidden_size: int):
         self.storage[name] = HiddenBuf(self.storage_length, self.num_envs, num_layers, hidden_size, self.dtype, self.device)

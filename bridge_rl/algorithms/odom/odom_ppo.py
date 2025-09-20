@@ -21,15 +21,14 @@ class OdomPPO(PPO):
     def _init_components(self):
         # derive shapes from env
         prop_shape = self.env.observation_manager.group_obs_dim['proprio']
-        priv_shape = self.env.observation_manager.group_obs_dim['priv']
+        est_shape = self.env.observation_manager.group_obs_dim['est_gt']
+        scan_shape = self.env.observation_manager.group_obs_dim['scan_edge']
         critic_obs_shape = self.env.observation_manager.group_obs_dim['critic_obs']
-        scan_shape = self.env.observation_manager.group_obs_dim['scan']
-        action_size = self.env.action_manager.total_action_dim
+        action_size = self.env.action_manager.default_action_term.action_dim
 
         # initialize networks
         self.actor = OdomActor(
             prop_shape=prop_shape,
-            priv_shape=priv_shape,
             scan_shape=scan_shape,
             actor_gru_hidden_size=self.cfg.actor_gru_hidden_size,
             actor_hidden_dims=self.cfg.actor_hidden_dims,
@@ -130,7 +129,6 @@ class OdomPPO(PPO):
 
         return stats
 
-    def play_act(self, obs, **kwargs):
+    def play_act(self, obs, eval_=True, **kwargs):
         """Generate actions for play/evaluation."""
-        return {'actions': self.actor.act(obs, eval_=True, **kwargs)}
-
+        return {'actions': self.actor.act(obs, eval_=eval_, **kwargs)}

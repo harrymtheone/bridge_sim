@@ -2,15 +2,13 @@ from __future__ import annotations
 
 import os
 import time
-from argparse import Namespace
 from pathlib import Path
 from typing import TYPE_CHECKING
 
 import torch
-from isaaclab.envs import ManagerBasedRLEnv
 from torch.utils.tensorboard import SummaryWriter
 
-from bridge_env.envs import BridgeEnv
+from isaaclab.envs import ManagerBasedRLEnv
 from bridge_rl.utils import EpisodeLogger
 
 if TYPE_CHECKING:
@@ -18,15 +16,22 @@ if TYPE_CHECKING:
 
 
 class RLRunner:
-    def __init__(self, cfg: RLTaskCfg, args: Namespace):
+    @property
+    def device(self):
+        return self.env.device
+
+    def __init__(self, cfg: RLTaskCfg):
         cfg.validate()
         self.cfg = cfg
 
-        self.env = BridgeEnv(cfg=cfg.env_cfg)
-        self.device = args.device
+        self.env = ManagerBasedRLEnv(cfg=cfg.env)
 
         # Create algorithm
-        self.algorithm = cfg.algorithm_cfg.class_type(cfg.algorithm_cfg, env=self.env)
+        self.algorithm = cfg.algorithm.class_type(cfg.algorithm, env=self.env)
+
+        # TODO --------------------------
+        self.algorithm.storage.register_data_buffer('use_estimated_values', data_shape=(1,), dtype=torch.bool)
+        # TODO --------------------------
 
         # Timing tracking
         self.collection_time = -1
@@ -39,7 +44,7 @@ class RLRunner:
 
         # Initialize episode logger
         self.episode_logger = EpisodeLogger(num_envs=self.env.num_envs)
-        self._prepare_log_dir(args)
+        self._prepare_log_dir()
 
     def learn(self):
         self.algorithm.train()
@@ -52,17 +57,16 @@ class RLRunner:
 
             with torch.inference_mode():
                 for _ in range(self.cfg.num_steps_per_update):
-                    observations['use_estimated_values'] = torch.zeros(self.env.num_envs, dtype=torch.bool, device=self.device)  # TODO: not finished here?!
+                    # TODO ------------------
+                    observations['use_estimated_values'] = torch.zeros(self.env.num_envs, dtype=torch.bool, device=self.device)
+                    # TODO ------------------
 
                     actions = self.algorithm.act(observations)
+                    # actions = {'action': torch.zeros(self.env.num_envs, 13, device=self.device)}
+
                     observations, rewards, terminated, timeouts, infos = self.env.step(actions)
 
-                    if self.cur_it < 100:
-                        rewards_clipped = rewards.clip(min=0.)
-                    else:
-                        rewards_clipped = rewards
-
-                    self.algorithm.process_env_step(rewards_clipped, terminated, timeouts, infos)
+                    self.algorithm.process_env_step(rewards, terminated, timeouts, infos)
                     self.episode_logger.step(rewards, terminated, timeouts)
 
                 self.algorithm.compute_returns(observations)
@@ -76,26 +80,25 @@ class RLRunner:
 
             self.log(infos, update_infos)
 
+            self.env.reward_manager.update_curriculum(self.cur_it)
+
             if self.cur_it % self.cfg.save_interval == 0:
                 self.save(os.path.join(self.model_dir, f'model_{self.cur_it}.pt'))
             self.save(os.path.join(self.model_dir, 'latest.pt'))
 
-    def _prepare_log_dir(self, args):
-        algorithm_name = self.cfg.algorithm_cfg.class_type.__name__
-        alg_dir: str = os.path.join(args.log_root, args.proj_name, algorithm_name)  # noqa
-        self.model_dir = os.path.join(alg_dir, args.exptid)
+    def _prepare_log_dir(self):
+        algorithm_name = self.cfg.algorithm.class_type.__name__
+        alg_dir: str = os.path.join(self.cfg.log_root_dir, self.cfg.project_name, algorithm_name)
+        self.model_dir = os.path.join(alg_dir, self.cfg.exptid)
         os.makedirs(self.model_dir, exist_ok=True)
 
-        if args.resume or args.resumeid:
-            if args.resumeid is None:
-                args.resumeid = args.exptid
-
-            resume_dir = os.path.join(alg_dir, args.resumeid)
+        if self.cfg.resume_id:
+            resume_dir = os.path.join(alg_dir, self.cfg.resume_id)
 
             if not os.path.isdir(resume_dir):
                 raise ValueError(f"resume directory \"{resume_dir}\" is not a directory")
 
-            if args.checkpoint is None:
+            if self.cfg.checkpoint is None or self.cfg.checkpoint < 0:
                 models = [file for file in os.listdir(resume_dir) if file.startswith("model")]
 
                 if 'latest.pt' in os.listdir(resume_dir):
@@ -107,7 +110,7 @@ class RLRunner:
                     raise ValueError(f"No checkpoint found at \"{resume_dir}\"")
 
             else:
-                model_name = "model_{}.pt".format(args.checkpoint)
+                model_name = "model_{}.pt".format(self.cfg.checkpoint)
 
             resume_path = os.path.join(resume_dir, model_name)
 
@@ -156,6 +159,7 @@ class RLRunner:
         print(
             f"""{'*' * width}\n"""
             f"""{progress.center(width, ' ')}\n\n"""
+            f"""{'Experiment:':>{pad}} {self.cfg.exptid}\n"""
             f"""{'Computation:':>{pad}} {fps:.0f} steps/s\n"""
             f"""{'Total timesteps:':>{pad}} {self.tot_steps}\n"""
             f"""{'Iteration time:':>{pad}} {iteration_time:.2f}s {self.collection_time:.2f}s {self.learn_time:.2f}s\n"""
