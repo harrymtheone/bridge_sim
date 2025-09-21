@@ -238,7 +238,7 @@ class DreamWaQ(PPO):
 
     def play_act(self, obs, **kwargs):
         """Generate actions for play/evaluation."""
-        return {'joint_pos': self.actor.act(obs, eval_=True, **kwargs)}
+        return {'joint_pos': self.actor.act(obs, eval_=True, **kwargs) * 0.}
 
     def save(self) -> Dict[str, Any]:
         """Save model state."""

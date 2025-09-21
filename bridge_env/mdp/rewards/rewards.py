@@ -187,7 +187,7 @@ def foothold(
         scanner_l_cfg: SceneEntityCfg,
         scanner_r_cfg: SceneEntityCfg,
         contact_sensor_cfg: SceneEntityCfg,
-        foothold_contact_thresh: float = 0.01,
+        foothold_contact_thresh: float,
         contact_force_threshold: float = 5.0,
 ) -> torch.Tensor:
     scanner_l: RayCasterV2 = env.scene.sensors[scanner_l_cfg.name]
@@ -195,8 +195,8 @@ def foothold(
     contact_sensor: ContactSensor = env.scene.sensors[contact_sensor_cfg.name]
 
     foothold_pts_height = torch.stack([
-        scanner_l.ray_starts_w[:, :, 2] - scanner_l.data.ray_hits_w[:, :, 2] + scanner_l.cfg.reading_bias_z,
-        scanner_r.ray_starts_w[:, :, 2] - scanner_r.data.ray_hits_w[:, :, 2] + scanner_r.cfg.reading_bias_z,
+        scanner_l.data.ray_starts_w[:, :, 2] - scanner_l.data.ray_hits_w[:, :, 2],
+        scanner_r.data.ray_starts_w[:, :, 2] - scanner_r.data.ray_hits_w[:, :, 2],
     ], dim=1)
 
     valid_foothold_perc = (foothold_pts_height < foothold_contact_thresh).sum(2) / foothold_pts_height.size(2)
@@ -204,6 +204,7 @@ def foothold(
     net_contact_forces = contact_sensor.data.net_forces_w_history
     is_contact = torch.max(torch.norm(net_contact_forces[:, :, contact_sensor_cfg.body_ids], dim=-1), dim=1)[0] > contact_force_threshold
     rew = (1 - valid_foothold_perc) * is_contact
+    print(rew)
     return rew.sum(dim=1)
 
 

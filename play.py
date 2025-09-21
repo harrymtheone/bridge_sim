@@ -41,7 +41,7 @@ def main(args):
     task_cfg.resume_id = args.exptid
     task_cfg.checkpoint = getattr(args, "checkpoint", -1)
 
-    task_cfg.env.scene.num_envs = 4
+    task_cfg.env.scene.num_envs = 1
     if isinstance(task_cfg.env.scene.terrain, TerrainImporterCfg):
         task_cfg.env.scene.terrain.terrain_generator.num_rows = 4
         task_cfg.env.scene.terrain.terrain_generator.num_cols = 4
