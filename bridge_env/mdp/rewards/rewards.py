@@ -204,7 +204,6 @@ def foothold(
     net_contact_forces = contact_sensor.data.net_forces_w_history
     is_contact = torch.max(torch.norm(net_contact_forces[:, :, contact_sensor_cfg.body_ids], dim=-1), dim=1)[0] > contact_force_threshold
     rew = (1 - valid_foothold_perc) * is_contact
-    print(rew)
     return rew.sum(dim=1)
 
 

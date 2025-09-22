@@ -12,7 +12,7 @@ from . import DreamWaQ
 class DreamWaQObservationsCfg:
     @configclass
     class Scan(ObservationGroupCfg):
-        scan = ObservationTermCfg(func=mdp.obs.height_scan, params=MISSING)
+        scan = ObservationTermCfg(func=mdp.obs.height_scan_1d, params=MISSING)
 
     proprio: UniversalProprio = UniversalProprio(enable_corruption=True)
 

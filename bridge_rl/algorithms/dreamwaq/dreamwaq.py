@@ -4,8 +4,8 @@ from typing import TYPE_CHECKING, Dict, Any, Optional
 
 import torch
 import torch.optim as optim
-from isaaclab.envs import ManagerBasedRLEnv
 
+from bridge_env.envs import BridgeEnv
 from bridge_rl.algorithms import PPO, PPOCritic
 from bridge_rl.storage import RolloutStorage
 from .networks import DreamWaQActor, DreamWaQRecurrentActor
@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 
 
 class DreamWaQ(PPO):
-    def __init__(self, cfg: DreamWaQCfg, env: ManagerBasedRLEnv, **kwargs):
+    def __init__(self, cfg: DreamWaQCfg, env: BridgeEnv, **kwargs):
         super().__init__(cfg, env, **kwargs)
         self.cfg = cfg
 

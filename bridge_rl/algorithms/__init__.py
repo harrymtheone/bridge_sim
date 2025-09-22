@@ -3,4 +3,5 @@ from .templates import *
 
 from .ppo import *
 from .dreamwaq import *
-from .odom import *
+from .odom_vae import *
+from .odom_priv import *

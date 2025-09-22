@@ -9,7 +9,8 @@ from bridge_env import mdp
 class UniversalProprio(ObservationGroupCfg):
     base_ang_vel = ObservationTermCfg(func=mdp.obs.base_ang_vel, noise=UniformNoiseCfg(n_min=-0.2, n_max=0.2))
     projected_gravity = ObservationTermCfg(func=mdp.obs.projected_gravity, noise=UniformNoiseCfg(n_min=-0.1, n_max=0.1))
-    commands = ObservationTermCfg(func=mdp.obs.generated_commands, params={"command_name": "base_velocity"})
+    phase_command = ObservationTermCfg(func=mdp.obs.generated_commands, params={"command_name": "phase"})
+    vel_command = ObservationTermCfg(func=mdp.obs.generated_commands, params={"command_name": "base_velocity"})
     joint_pos = ObservationTermCfg(func=mdp.obs.joint_pos_rel, noise=UniformNoiseCfg(n_min=-0.01, n_max=0.01))
     joint_vel = ObservationTermCfg(func=mdp.obs.joint_vel_rel, noise=UniformNoiseCfg(n_min=-1.5, n_max=1.5))
     last_action = ObservationTermCfg(func=mdp.obs.last_action_v2)
@@ -18,11 +19,13 @@ class UniversalProprio(ObservationGroupCfg):
 @configclass
 class UniversalCriticObs(ObservationGroupCfg):
     history_length = 50
+    flatten_history_dim = False
 
     base_lin_vel = ObservationTermCfg(func=mdp.obs.base_lin_vel)
     base_ang_vel = ObservationTermCfg(func=mdp.obs.base_ang_vel)
     projected_gravity = ObservationTermCfg(func=mdp.obs.projected_gravity)
-    commands = ObservationTermCfg(func=mdp.obs.generated_commands, params={"command_name": "base_velocity"})
+    phase_command = ObservationTermCfg(func=mdp.obs.generated_commands, params={"command_name": "phase"})
+    vel_command = ObservationTermCfg(func=mdp.obs.generated_commands, params={"command_name": "base_velocity"})
     joint_pos = ObservationTermCfg(func=mdp.obs.joint_pos_rel)
     joint_vel = ObservationTermCfg(func=mdp.obs.joint_vel_rel)
     last_action = ObservationTermCfg(func=mdp.obs.last_action_v2)

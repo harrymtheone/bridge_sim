@@ -1,14 +1,14 @@
 from isaaclab import sim as sim_utils
 from isaaclab.assets import AssetBaseCfg
-from isaaclab.managers import SceneEntityCfg, RewardTermCfg, ObservationTermCfg
+from isaaclab.managers import SceneEntityCfg, RewardTermCfg
 from isaaclab.sim import SimulationCfg
 from isaaclab.utils import configclass
 
 from bridge_env import mdp
 from bridge_env.envs import BridgeEnvCfg
-from bridge_rl.algorithms import DreamWaQCfg
+from bridge_rl.algorithms import OdomVAECfg
 from bridge_rl.runners import RLTaskCfg
-from . import T1SceneCfg, T1ActionsCfg, T1TerminationsCfg, T1EventCfg, T1MotionGeneratorCfg, T1CommandsCfg
+from tasks.T1 import T1SceneCfg, T1ActionsCfg, T1TerminationsCfg, T1EventCfg, T1MotionGeneratorCfg, T1CommandsCfg
 
 
 @configclass
@@ -177,10 +177,10 @@ class T1FlatEnvCfg(BridgeEnvCfg):
 
 
 @configclass
-class T1DreamWaqFlatTaskCfg(RLTaskCfg):
+class T1OdomVAEFlatTaskCfg(RLTaskCfg):
     env: T1FlatEnvCfg = T1FlatEnvCfg()
 
-    algorithm = DreamWaQCfg()
-    algorithm.observations.scan.scan = ObservationTermCfg(func=mdp.obs.height_scan, params={"sensor_cfg": SceneEntityCfg("scanner")})
+    algorithm = OdomVAECfg()
+    algorithm.observations.scan.scan.params = dict(sensor_cfg=SceneEntityCfg("scanner"), offset=-0.7)
 
     max_iterations: int = 10000

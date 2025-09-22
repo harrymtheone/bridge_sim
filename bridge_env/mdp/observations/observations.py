@@ -6,25 +6,28 @@ from isaaclab.envs.utils.io_descriptors import generic_io_descriptor, record_sha
 from isaaclab.managers import SceneEntityCfg
 from isaaclab.sensors import ContactSensor
 
+from bridge_env.sensors import RayCasterV2
+from bridge_env.sensors.ray_caster.patterns import GridPatternV2Cfg
 
-# def height_scan_1d(env: ManagerBasedEnv, sensor_cfg: SceneEntityCfg, offset: float = 0.5) -> torch.Tensor:
-#     sensor: RayCaster = env.scene.sensors[sensor_cfg.name]
-#     measurement = sensor.data.pos_w[:, 2].unsqueeze(1) - sensor.data.ray_hits_w[..., 2] - offset
-#
-#     measurement[measurement.isinf()] = sensor.cfg.max_distance  # TODO: why????
-#     return measurement
-#
-#
-# def height_scan_2d(env: ManagerBasedEnv, sensor_cfg: SceneEntityCfg, offset: float = 0.5) -> torch.Tensor:
-#     sensor: RayCaster = env.scene.sensors[sensor_cfg.name]
-#     assert isinstance(sensor.cfg.pattern_cfg, GridPatternV2Cfg)
-#
-#     measurement = sensor.data.pos_w[:, 2].unsqueeze(1) - sensor.data.ray_hits_w[..., 2] - offset
-#
-#     measurement[measurement.isinf()] = sensor.cfg.max_distance  # TODO: why????
-#     return measurement.unflatten(1, sensor.cfg.pattern_cfg.shape)
-#
-#
+
+def height_scan_1d(env: ManagerBasedEnv, sensor_cfg: SceneEntityCfg, offset: float = 0.5) -> torch.Tensor:
+    sensor: RayCasterV2 = env.scene.sensors[sensor_cfg.name]
+    measurement = sensor.data.pos_w[:, 2].unsqueeze(1) - sensor.data.ray_hits_w[..., 2] - offset
+
+    measurement[measurement.isinf()] = sensor.cfg.max_distance  # TODO: why????
+    return measurement
+
+
+def height_scan_2d(env: ManagerBasedEnv, sensor_cfg: SceneEntityCfg, offset: float = 0.5) -> torch.Tensor:
+    sensor: RayCasterV2 = env.scene.sensors[sensor_cfg.name]
+    assert isinstance(sensor.cfg.pattern_cfg, GridPatternV2Cfg)
+
+    measurement = sensor.data.pos_w[:, 2].unsqueeze(1) - sensor.data.ray_hits_w[..., 2] - offset
+
+    measurement[measurement.isinf()] = sensor.cfg.max_distance  # TODO: why????
+    return measurement.unflatten(1, sensor.cfg.pattern_cfg.shape)
+
+
 # def foothold_1d(env: ManagerBasedEnv, sensor_cfg: SceneEntityCfg) -> torch.Tensor:
 #     scanner: FootholdRayCaster = env.scene.sensors[sensor_cfg.name]
 #

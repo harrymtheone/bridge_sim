@@ -3,9 +3,9 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Dict, Any, Optional
 
 import torch
-from isaaclab.envs import ManagerBasedRLEnv
 from torch.distributions import kl_divergence, Normal
 
+from bridge_env.envs import BridgeEnv
 from bridge_rl.storage import RolloutStorage
 
 if TYPE_CHECKING:
@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 
 
 class PPO:
-    def __init__(self, cfg: PPOCfg, env: ManagerBasedRLEnv, **kwargs):
+    def __init__(self, cfg: PPOCfg, env: BridgeEnv, **kwargs):
         cfg.validate()  # noqa
 
         self.cfg = cfg

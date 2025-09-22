@@ -44,7 +44,7 @@ class OdomActor(BaseRecurrentActor):
 
     def act(self, obs, eval_: bool = False, **kwargs):
         proprio = obs['proprio']
-        scan_edge = obs['scan_edge']
+        scan = obs['scan']
         use_estimated_values = obs['use_estimated_values']
 
         if torch.any(use_estimated_values):
@@ -60,7 +60,7 @@ class OdomActor(BaseRecurrentActor):
             #     torch.cat([proprio, scan_enc, obs.priv_actor], dim=1),
             # )
         else:
-            scan_enc = self.scan_encoder(scan_edge)
+            scan_enc = self.scan_encoder(scan)
             x = torch.cat([proprio, scan_enc], dim=1)
 
         # GRU forward
@@ -77,7 +77,7 @@ class OdomActor(BaseRecurrentActor):
 
     def train_act(self, obs, hidden_states=None, **kwargs):
         proprio = obs['proprio']
-        scan = obs['scan_edge']
+        scan = obs['scan']
         use_estimated_values = obs['use_estimated_values']
 
         if use_estimated_values is not None and torch.any(use_estimated_values):
