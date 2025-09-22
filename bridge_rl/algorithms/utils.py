@@ -36,3 +36,5 @@ def recurrent_wrapper(func: callable,
         return [r.unflatten(0, seq_batch) for r in rtn]
     else:
         return rtn.unflatten(0, seq_batch)
+
+

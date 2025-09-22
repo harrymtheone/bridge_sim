@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 import torch
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Union
 from collections import deque
 import statistics
 
@@ -47,3 +49,45 @@ class EpisodeLogger:
             'buffer_size': len(self.episode_length),
             'buffer_capacity': self.episode_length.maxlen
         }
+
+
+class StatisticsTracker:
+    """A utility class for tracking and computing statistics over multiple updates."""
+
+    def __init__(self):
+        self._stats = {}
+        self._counts = {}
+
+    def add(self, name: str, value: Union[float, torch.Tensor]):
+        """Add a value to the statistics tracker.
+
+        Args:
+            name: Name of the statistic
+            value: Value to add (can be tensor or scalar)
+        """
+        if isinstance(value, torch.Tensor):
+            value = value.item()
+
+        if name not in self._stats:
+            self._stats[name] = 0.0
+            self._counts[name] = 0
+
+        self._stats[name] += value
+        self._counts[name] += 1
+
+    def get_means(self) -> Dict[str, float]:
+        """Get the mean values for all tracked statistics.
+
+        Returns:
+            Dictionary mapping statistic names to their mean values
+        """
+        return {
+            name: total / self._counts[name]
+            for name, total in self._stats.items()
+            if self._counts[name] > 0
+        }
+
+    def clear(self):
+        """Clear all tracked statistics."""
+        self._stats.clear()
+        self._counts.clear()

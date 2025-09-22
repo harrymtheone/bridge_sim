@@ -1,12 +1,13 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Dict, Any, Optional
+from typing import TYPE_CHECKING, Dict, Any
 
 import torch
 from torch.distributions import kl_divergence, Normal
 
 from bridge_env.envs import BridgeEnv
 from bridge_rl.storage import RolloutStorage
+from bridge_rl.utils import StatisticsTracker
 
 if TYPE_CHECKING:
     from . import PPOCfg, BaseActor, BaseCritic
@@ -34,6 +35,8 @@ class PPO:
 
         # Initialize components
         self._init_components()
+
+        self.stats_tracker = StatisticsTracker()
 
     def _init_components(self):
         raise NotImplementedError
@@ -131,32 +134,33 @@ class PPO:
 
         return kl_mean, surrogate_loss, value_loss, entropy_loss
 
-    def _prepare_hidden_states_batch(self, main_hidden_states, additional_hidden_states):
-        """Prepare hidden states batch for actor. Override for custom hidden state handling."""
-        # Default behavior: return tuple of all hidden states
-        all_hidden_states = [main_hidden_states]
-        for key in sorted(additional_hidden_states.keys()):
-            all_hidden_states.append(additional_hidden_states[key])
-        return tuple(all_hidden_states) if len(all_hidden_states) > 1 else main_hidden_states
+    def _update_ppo(self, batch):
+        """Update PPO policy and critic networks.
 
-    def _compute_additional_losses(self, batch: Dict[str, torch.Tensor]) -> Optional[Dict[str, torch.Tensor]]:
-        """Compute additional losses specific to subclasses.
-        
         Args:
-            batch: Mini-batch data
-            
-        Returns:
-            Dictionary of additional losses or None
-        """
-        return None
+            batch: Mini-batch data from storage
 
-    def _get_additional_stats(self) -> Optional[Dict[str, float]]:
-        """Get additional training statistics from subclasses.
-        
         Returns:
-            Dictionary of additional statistics or None
+            KL divergence mean for printing
         """
-        return None
+        # Compute PPO loss
+        kl_mean, surrogate_loss, value_loss, entropy_loss = self._compute_ppo_loss(batch)
+
+        # Combine losses
+        loss = surrogate_loss + self.cfg.value_loss_coef * value_loss - self.cfg.entropy_coef * entropy_loss
+
+        # Gradient step
+        self._update_learning_rate(kl_mean)
+        self._gradient_step(loss)
+
+        if self.cfg.noise_std_range:
+            self.actor.clip_std(self.cfg.noise_std_range[0], self.cfg.noise_std_range[1])
+
+        # Track PPO statistics with proper labels
+        self.stats_tracker.add("Loss/kl_div", kl_mean)
+        self.stats_tracker.add("Loss/surrogate_loss", surrogate_loss)
+        self.stats_tracker.add("Loss/value_loss", value_loss)
+        self.stats_tracker.add("Loss/entropy_loss", entropy_loss)
 
     def _update_learning_rate(self, kl_mean: float):
         if self.cfg.learning_rate_schedule == 'adaptive' and self.cfg.desired_kl is not None:

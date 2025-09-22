@@ -10,13 +10,14 @@ from bridge_rl.storage import RolloutStorage
 from .networks import OdomVAEActor
 
 if TYPE_CHECKING:
-    from .odom_vae_cfg import OdomCfg
+    from .odom_vae_cfg import OdomVAECfg
 
 
 class OdomVAE(PPO):
-    def __init__(self, cfg: OdomCfg, env: BridgeEnv, **kwargs):
+    cfg: OdomVAECfg
+
+    def __init__(self, cfg: OdomVAECfg, env: BridgeEnv, **kwargs):
         super().__init__(cfg, env, **kwargs)
-        self.cfg = cfg
 
     def _init_components(self):
         # derive shapes from env
@@ -75,96 +76,88 @@ class OdomVAE(PPO):
         super().process_env_step(rewards, terminated, timeouts, infos, **kwargs)
 
     def update(self, **kwargs) -> Dict[str, float]:
-        mean_value_loss = 0
-        mean_surrogate_loss = 0
-        mean_entropy_loss = 0
-        mean_kl = 0
+        """Main update loop for both PPO and VAE components."""
+        # Clear statistics from previous update
+        self.stats_tracker.clear()
 
-        kl_change = []
-        num_updates = 0
-
+        # Get batch generator
         if self.actor.is_recurrent:
-            generator = self.storage.recurrent_mini_batch_generator(self.cfg.num_mini_batches, self.cfg.num_learning_epochs)
+            generator = self.storage.recurrent_mini_batch_generator(
+                self.cfg.num_mini_batches, self.cfg.num_learning_epochs
+            )
         else:
-            generator = self.storage.mini_batch_generator(self.cfg.num_mini_batches, self.cfg.num_learning_epochs)
+            generator = self.storage.mini_batch_generator(
+                self.cfg.num_mini_batches, self.cfg.num_learning_epochs
+            )
 
+        # Training loop
         for batch in generator:
-            # Extract batch data for actor forward pass
+            # Extract batch data
             observations = batch['observations']
             hidden_states = batch['hidden_states'] if self.actor.is_recurrent else None
             masks = batch['masks'].squeeze(-1) if self.actor.is_recurrent else slice(None)
 
-            # Forward pass through actor
+            # Forward pass through actor to get VAE input
             vae_input = self.actor.train_act(observations, hidden_states=hidden_states)
 
-            # Compute PPO loss
-            kl_mean, surrogate_loss, value_loss, entropy_loss = self._compute_ppo_loss(batch)
+            # Update PPO (statistics tracked internally)
+            self._update_ppo(batch)
 
-            # Track KL divergence for adaptive learning rate
-            kl_change.append(kl_mean)
-            num_updates += 1
-            mean_kl += kl_mean
-            mean_surrogate_loss += surrogate_loss.item()
-            mean_value_loss += value_loss.item()
-            mean_entropy_loss += entropy_loss.item()
-
-            # Combine losses
-            total_loss = surrogate_loss + self.cfg.value_loss_coef * value_loss - self.cfg.entropy_coef * entropy_loss
-
-            # Gradient step
-            self._update_learning_rate(kl_mean)
-            self._gradient_step(total_loss)
-
-            if self.cfg.noise_std_range:
-                self.actor.clip_std(self.cfg.noise_std_range[0], self.cfg.noise_std_range[1])
-
-            # compute VAE loss
-            z, vel, ot1, mu_z, logvar_z, mu_vel, logvar_vel = recurrent_wrapper(self.actor.vae.forward, vae_input.detach())
-
-            # velocity estimation loss
-            estimation_loss = self.mse_loss(vel[masks], observations['est_gt'][masks])
-
-            # Ot+1 prediction loss  TODO: what???
-            # prediction_loss = self.mse_loss(ot1[masks], obs_next_batch.proprio[masks])
-
-            # VAE loss
-            vae_loss_z = 1 + logvar_z - mu_z.pow(2) - logvar_z.exp()
-            vae_loss_z = -0.5 * vae_loss_z[masks].sum(dim=1).mean()
-
-            vae_loss_vel = 1 + logvar_vel - mu_vel.pow(2) - logvar_vel.exp()
-            vae_loss_vel = -0.5 * vae_loss_vel[masks].sum(dim=1).mean()
-
-            loss = estimation_loss + vae_loss_z + vae_loss_vel
-
-            self.optimizer_vae.zero_grad()
-            loss.backward()
-            self.optimizer.step()
-
-        # Average statistics
-        mean_value_loss /= num_updates
-        mean_surrogate_loss /= num_updates
-        mean_entropy_loss /= num_updates
-        mean_kl /= num_updates
-
-        # Print KL divergence tracking
-        kl_str = 'kl: '
-        for k in kl_change:
-            kl_str += f'{k:.3f} | '
-        print(kl_str)
+            # Update VAE (statistics tracked internally)
+            self._update_vae(vae_input, observations, masks)
 
         self.storage.clear()
 
-        # Base statistics
-        stats = {
+        # Get all mean statistics (already have proper labels)
+        stats = self.stats_tracker.get_means()
+
+        # Add additional non-loss metrics
+        stats.update({
             'Loss/learning_rate': self.learning_rate,
-            'Loss/value_loss': mean_value_loss,
-            'Loss/kl_div': mean_kl,
-            'Loss/surrogate_loss': mean_surrogate_loss,
-            'Loss/entropy_loss': mean_entropy_loss,
             'Train/noise_std': self.actor.log_std.exp().mean().item(),
-        }
+        })
 
         return stats
+
+    def _update_vae(self, vae_input, observations, masks):
+        """Update VAE network.
+
+        Args:
+            vae_input: Input to VAE network
+            observations: Batch observations
+            masks: Masks for recurrent networks
+        """
+        # Compute VAE forward pass
+        z, vel, ot1, mu_z, logvar_z, mu_vel, logvar_vel = recurrent_wrapper(
+            self.actor.vae.forward, vae_input.detach()
+        )
+
+        # Velocity estimation loss
+        estimation_loss = self.mse_loss(vel[masks], observations['est_gt'][masks])
+
+        # Ot+1 prediction loss  TODO: what???
+        # prediction_loss = self.mse_loss(ot1[masks], obs_next_batch.proprio[masks])
+
+        # VAE loss for latent variable z
+        vae_loss_z = 1 + logvar_z - mu_z.pow(2) - logvar_z.exp()
+        vae_loss_z = -0.5 * vae_loss_z[masks].sum(dim=1).mean()
+
+        # VAE loss for velocity
+        vae_loss_vel = 1 + logvar_vel - mu_vel.pow(2) - logvar_vel.exp()
+        vae_loss_vel = -0.5 * vae_loss_vel[masks].sum(dim=1).mean()
+
+        # Total VAE loss
+        loss = estimation_loss + vae_loss_z + vae_loss_vel
+
+        # VAE gradient step
+        self.optimizer_vae.zero_grad()
+        loss.backward()
+        self.optimizer_vae.step()
+
+        # Track VAE statistics with proper labels
+        self.stats_tracker.add("Loss/vae_estimation_loss", estimation_loss)
+        self.stats_tracker.add("Loss/vae_loss_z", vae_loss_z)
+        self.stats_tracker.add("Loss/vae_loss_vel", vae_loss_vel)
 
     def play_act(self, obs, eval_=True, **kwargs):
         """Generate actions for play/evaluation."""
