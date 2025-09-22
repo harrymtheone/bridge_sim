@@ -1,7 +1,7 @@
 from isaaclab.envs import ManagerBasedRLEnvCfg
 from isaaclab.utils import configclass
 
-from bridge_env.managers.motion_generator import MotionTermCfg
+from bridge_env.managers import MotionTermCfg
 
 
 @configclass

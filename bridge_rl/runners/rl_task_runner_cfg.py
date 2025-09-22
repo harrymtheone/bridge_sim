@@ -24,12 +24,6 @@ class RLTaskCfg:
 
     num_steps_per_update: int = 24
 
-    save_interval: int = 100
-
-    logger_backend: str = "tensorboard"
-
-    log_root_dir: str = MISSING
-
     project_name: str = MISSING
 
     exptid: str = MISSING
@@ -37,6 +31,15 @@ class RLTaskCfg:
     resume_id: str = None
 
     checkpoint: int = -1
+
+    save_interval: int = 100
+
+    logger_backend: str = "tensorboard"
+
+    log_root_dir: str = MISSING
+
+    only_positive_reward: bool = True
+    only_positive_reward_until: int | None = None
 
     def __post_init__(self):
         self.env.observations = self.algorithm.observations

@@ -4,9 +4,9 @@ from typing import TYPE_CHECKING, Sequence
 
 import torch
 from isaaclab.envs import ManagerBasedRLEnv, VecEnvStepReturn
-from isaaclab.managers import CommandManager, RecorderManager, ObservationManager, TerminationManager, RewardManager, CurriculumManager
+from isaaclab.managers import CommandManager, CurriculumManager, ObservationManager, RecorderManager, RewardManager, TerminationManager
 
-from bridge_env.managers import MotionGenerator, ActionManagerV2
+from bridge_env.managers import ActionManagerV2, MotionGenerator
 
 if TYPE_CHECKING:
     from . import BridgeEnvCfg

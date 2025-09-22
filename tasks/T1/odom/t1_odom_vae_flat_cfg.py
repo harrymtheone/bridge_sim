@@ -33,7 +33,7 @@ class RewardsCfg:
 
     feet_clearance = RewardTermCfg(
         func=mdp.rew.feet_clearance_masked,
-        weight=0.6,
+        weight=1.2,
         params=dict(
             command_name="phase",
             sensor_l_cfg=SceneEntityCfg("left_feet_scanner"),
@@ -144,7 +144,7 @@ class RewardsCfg:
         ),
     )
 
-    # dof_pos_limits = RewardTermCfg(func=mdp.joint_pos_limits, weight=-10.0)
+    dof_pos_limits = RewardTermCfg(func=mdp.rew.joint_pos_limits, weight=-10.0)
 
 
 @configclass
@@ -179,6 +179,9 @@ class T1FlatEnvCfg(BridgeEnvCfg):
 @configclass
 class T1OdomVAEFlatTaskCfg(RLTaskCfg):
     env: T1FlatEnvCfg = T1FlatEnvCfg()
+
+    only_positive_reward = True
+    only_positive_reward_until = 500
 
     algorithm = OdomVAECfg()
     algorithm.observations.scan.scan.params = dict(sensor_cfg=SceneEntityCfg("scanner"), offset=-0.7)

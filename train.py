@@ -27,12 +27,19 @@ def launch_app():
 
 
 def main(args):
+    import os
     from bridge_rl.runners import RLTaskCfg
 
     from tasks import all_tasks
 
+    autodl_log_root = os.path.join(os.path.expanduser("~"), 'autodl-tmp')
+    if os.path.isdir(autodl_log_root):
+        log_root = os.path.join(autodl_log_root, 'logs')
+    else:
+        log_root = 'logs'
+
     task_cfg: RLTaskCfg = all_tasks[args.task]()
-    task_cfg.log_root_dir = "logs"
+    task_cfg.log_root_dir = log_root
     task_cfg.project_name = args.proj_name
     task_cfg.exptid = args.exptid
 

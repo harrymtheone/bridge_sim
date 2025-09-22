@@ -66,6 +66,10 @@ class RLRunner:
 
                     observations, rewards, terminated, timeouts, infos = self.env.step(actions)
 
+                    if self.cfg.only_positive_reward:
+                        if self.cfg.only_positive_reward_until is None or self.cur_it < self.cfg.only_positive_reward_until:
+                            rewards = torch.clamp(rewards, min=0.)
+
                     self.algorithm.process_env_step(rewards, terminated, timeouts, infos)
                     self.episode_logger.step(rewards, terminated, timeouts)
 
