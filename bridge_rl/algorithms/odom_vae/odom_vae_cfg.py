@@ -6,7 +6,7 @@ from isaaclab.managers import ObservationTermCfg, ObservationGroupCfg
 from isaaclab.utils import configclass
 
 from bridge_env import mdp
-from bridge_rl.algorithms import UniversalProprio, UniversalCriticObs, PPOCfg
+from bridge_rl.algorithms import UniversalProprioWithPhase, UniversalCriticObsWithPhase, PPOCfg
 from . import OdomVAE
 
 
@@ -20,7 +20,7 @@ class OdomObservationCfg:
     class EstGT(ObservationGroupCfg):
         vel = ObservationTermCfg(func=mdp.obs.base_lin_vel)
 
-    proprio = UniversalProprio()
+    proprio = UniversalProprioWithPhase()
 
     # depth = ObservationGroupCfg(
     #     terms={
@@ -43,7 +43,7 @@ class OdomObservationCfg:
 
     est_gt = EstGT()
 
-    critic_obs: UniversalCriticObs = UniversalCriticObs(
+    critic_obs: UniversalCriticObsWithPhase = UniversalCriticObsWithPhase(
         enable_corruption=True,
         history_length=50,
         flatten_history_dim=False,
@@ -54,13 +54,15 @@ class OdomObservationCfg:
 class OdomVAECfg(PPOCfg):
     class_type: type = OdomVAE
 
-    # ---- network params
-    # -- VAE
-    vae_latent_size: int = 16
-    # -- Actor
+    observations = OdomObservationCfg()
+
+    # -- Actor Critic
     actor_gru_hidden_size: int = 128
     actor_gru_num_layers: int = 2
     actor_hidden_dims: tuple = (512, 256, 128)
     critic_hidden_dims: tuple = (512, 256, 128)
 
-    observations = OdomObservationCfg()
+    # -- VAE
+    vae_latent_size: int = 16
+    vae_loss_z_coef: float = 1.0
+    vae_loss_vel_coef: float = 1.0

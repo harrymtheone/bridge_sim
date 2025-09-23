@@ -8,7 +8,7 @@ from isaaclab import sim as sim_utils
 from isaaclab.actuators import DelayedPDActuatorCfg
 from isaaclab.assets import ArticulationCfg
 from isaaclab.assets import AssetBaseCfg
-from isaaclab.managers import SceneEntityCfg, TerminationTermCfg, EventTermCfg
+from isaaclab.managers import SceneEntityCfg, TerminationTermCfg, EventTermCfg, CurriculumTermCfg
 from isaaclab.scene import InteractiveSceneCfg
 from isaaclab.sensors import ContactSensorCfg, RayCasterCfg
 from isaaclab.sim import UsdFileCfg, RigidBodyPropertiesCfg, ArticulationRootPropertiesCfg
@@ -138,7 +138,7 @@ class T1SceneCfg(InteractiveSceneCfg):
     contact_forces = ContactSensorCfg(
         prim_path="{ENV_REGEX_NS}/Robot/.*",
         track_air_time=True,
-        update_period=0.0,
+        update_period=0.02,
         history_length=0,
         debug_vis=False,
     )
@@ -153,7 +153,7 @@ class T1SceneCfg(InteractiveSceneCfg):
         offset=RayCasterCfg.OffsetCfg(pos=(0.3, 0., 0.)),
         max_distance=2.0,
         ray_alignment="yaw",
-        update_period=0.0,
+        update_period=0.02 * 5,
         history_length=0,
         debug_vis=True,
     )
@@ -168,6 +168,7 @@ class T1SceneCfg(InteractiveSceneCfg):
         offset=RayCasterCfg.OffsetCfg(pos=(0.01, 0., 0.)),
         max_distance=0.5,
         ray_alignment="base_v",
+        update_period=0.02,
         debug_vis=False,
     )
     right_feet_scanner = RayCasterV2Cfg(
@@ -180,6 +181,7 @@ class T1SceneCfg(InteractiveSceneCfg):
         offset=RayCasterCfg.OffsetCfg(pos=(0.01, 0., 0.)),
         max_distance=0.5,
         ray_alignment="base_v",
+        update_period=0.02,
         debug_vis=False,
     )
 
@@ -329,6 +331,11 @@ class T1EventCfg:
     #         "torque_range": (-0.0, 0.0),
     #     },
     # )
+
+
+@configclass
+class T1CurriculumCfg:
+    terrain_levels = CurriculumTermCfg(func=mdp.curr.terrain_levels_vel)
 
 
 @configclass

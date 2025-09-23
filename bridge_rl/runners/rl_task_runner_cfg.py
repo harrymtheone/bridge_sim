@@ -38,7 +38,7 @@ class RLTaskCfg:
 
     log_root_dir: str = MISSING
 
-    only_positive_reward: bool = True
+    only_positive_reward: bool = False
     only_positive_reward_until: int | None = None
 
     def __post_init__(self):

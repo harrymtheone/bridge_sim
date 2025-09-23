@@ -123,18 +123,18 @@ class PPO:
             # Value function loss
             if self.cfg.use_clipped_value_loss:
                 value_clipped = target_values + (evaluation - target_values).clamp(-self.cfg.clip_param, self.cfg.clip_param)
-                value_losses = (evaluation - returns).pow(2)
-                value_losses_clipped = (value_clipped - returns).pow(2)
+                value_losses = (returns - evaluation).pow(2)
+                value_losses_clipped = (returns - value_clipped).pow(2)
                 value_loss = torch.max(value_losses, value_losses_clipped)[masks].mean()
             else:
-                value_loss = (evaluation - returns)[masks].pow(2).mean()
+                value_loss = (returns - evaluation)[masks].pow(2).mean()
 
             # Entropy loss
-            entropy_loss = self.cfg.entropy_coef * self.actor.entropy[masks].mean()
+            entropy_loss = self.actor.entropy[masks].mean()
 
         return kl_mean, surrogate_loss, value_loss, entropy_loss
 
-    def _update_ppo(self, batch):
+    def _update_ppo(self, batch: dict[str, torch.Tensor]):
         """Update PPO policy and critic networks.
 
         Args:

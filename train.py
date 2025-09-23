@@ -42,12 +42,12 @@ def main(args):
     task_cfg.log_root_dir = log_root
     task_cfg.project_name = args.proj_name
     task_cfg.exptid = args.exptid
+    task_cfg.resume_id = getattr(args, 'resumeid', task_cfg.resume_id)
+    task_cfg.checkpoint = getattr(args, 'checkpoint', task_cfg.checkpoint)
 
     if args.debug:
         task_cfg.env.scene.num_envs = 64
         task_cfg.logger_backend = None
-
-    task_cfg.max_iterations = 30000
 
     runner = task_cfg.class_type(cfg=task_cfg)
 

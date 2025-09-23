@@ -1,14 +1,13 @@
-import isaaclab.sim as sim_utils
+from isaaclab import terrains
 from isaaclab.managers import SceneEntityCfg, RewardTermCfg
 from isaaclab.sim import SimulationCfg
-from isaaclab.terrains import TerrainImporterCfg
 from isaaclab.utils import configclass
 
 from bridge_env import mdp
 from bridge_env.envs import BridgeEnvCfg
 from bridge_rl.algorithms import OdomVAECfg
 from bridge_rl.runners import RLTaskCfg
-from tasks.T1 import T1ActionsCfg, T1CommandsCfg, T1EventCfg, T1MotionGeneratorCfg, T1SceneCfg, T1TerminationsCfg
+from tasks.T1 import T1ActionsCfg, T1CommandsCfg, T1CurriculumCfg, T1EventCfg, T1MotionGeneratorCfg, T1SceneCfg, T1TerminationsCfg
 
 
 @configclass
@@ -148,7 +147,7 @@ class RewardsCfg:
 
 
 @configclass
-class T1FlatEnvCfg(BridgeEnvCfg):
+class T1PyramidEnvCfg(BridgeEnvCfg):
     episode_length_s = 20.0
 
     decimation = 10
@@ -158,22 +157,42 @@ class T1FlatEnvCfg(BridgeEnvCfg):
     scene = T1SceneCfg(
         num_envs=4096,
         env_spacing=2.0,
-        terrain=TerrainImporterCfg(
+        terrain=terrains.TerrainImporterCfg(
             prim_path="/World/defaultGroundPlane",
-            terrain_type="plane",
-            terrain_generator=None,
-            max_init_terrain_level=5,
-            physics_material=sim_utils.RigidBodyMaterialCfg(
-                friction_combine_mode="multiply",
-                restitution_combine_mode="multiply",
-                static_friction=1.0,
-                dynamic_friction=1.0,
-            ),
-            debug_vis=False,
+            terrain_generator=terrains.TerrainGeneratorCfg(
+                curriculum=True,
+                size=(8, 8),
+                border_width=8.,
+                border_height=0.,
+                num_rows=20,
+                num_cols=20,
+                horizontal_scale=0.1,
+                vertical_scale=0.005,
+                slope_threshold=0.75,
+                sub_terrains={
+                    'plane': terrains.MeshPlaneTerrainCfg(
+                        proportion=0.2,
+                    ),
+                    'stairs_up': terrains.MeshPyramidStairsTerrainCfg(
+                        proportion=0.4,
+                        border_width=0.5,
+                        step_height_range=(0.05, 0.13),
+                        step_width=0.25,
+                        platform_width=2,
+                    ),
+                    'stairs_down': terrains.MeshInvertedPyramidStairsTerrainCfg(
+                        proportion=0.4,
+                        border_width=0.5,
+                        step_height_range=(0.05, 0.13),
+                        step_width=0.25,
+                        platform_width=2,
+                    ),
+                },
+            )
         )
     )
 
-    curriculum = None
+    curriculum = T1CurriculumCfg()
 
     events = T1EventCfg()
 
@@ -189,13 +208,16 @@ class T1FlatEnvCfg(BridgeEnvCfg):
 
 
 @configclass
-class T1OdomVAEFlatTaskCfg(RLTaskCfg):
-    env: T1FlatEnvCfg = T1FlatEnvCfg()
+class T1OdomVAEPyramidTaskCfg(RLTaskCfg):
+    env: T1PyramidEnvCfg = T1PyramidEnvCfg()
 
     only_positive_reward = True
-    only_positive_reward_until = 500
+    only_positive_reward_until = 3000 + 500
 
-    algorithm = OdomVAECfg()
+    algorithm = OdomVAECfg(
+        init_noise_std=0.6,
+        continue_from_last_std=False,
+    )
     algorithm.observations.scan.scan.params = dict(sensor_cfg=SceneEntityCfg("scanner"), offset=-0.7)
 
     max_iterations: int = 10000

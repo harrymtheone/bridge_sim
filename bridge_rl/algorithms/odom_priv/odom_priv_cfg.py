@@ -6,7 +6,7 @@ from isaaclab.managers import ObservationTermCfg, ObservationGroupCfg
 from isaaclab.utils import configclass
 
 from bridge_env import mdp
-from bridge_rl.algorithms import UniversalProprio, UniversalCriticObs, PPOCfg
+from bridge_rl.algorithms import UniversalProprioWithPhase, UniversalCriticObsWithPhase, PPOCfg
 from . import OdomPriv
 
 
@@ -16,7 +16,7 @@ class OdomObservationCfg:
     class Scan(ObservationGroupCfg):
         scan = ObservationTermCfg(func=mdp.obs.height_scan_1d, params=MISSING)
 
-    proprio = UniversalProprio()
+    proprio = UniversalProprioWithPhase()
 
     # depth = ObservationGroupCfg(
     #     terms={
@@ -45,7 +45,7 @@ class OdomObservationCfg:
     #     }
     # )
 
-    critic_obs: UniversalCriticObs = UniversalCriticObs(
+    critic_obs: UniversalCriticObsWithPhase = UniversalCriticObsWithPhase(
         enable_corruption=True,
         history_length=50,
         flatten_history_dim=False,

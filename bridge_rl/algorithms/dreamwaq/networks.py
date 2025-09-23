@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from typing import Optional, Tuple
+import math
+from typing import Tuple
 
 import torch
 import torch.nn as nn
@@ -10,46 +11,47 @@ from bridge_rl.algorithms import make_linear_layers, recurrent_wrapper, BaseActo
 
 
 class VAE(nn.Module):
-    """Variational Autoencoder for DreamWAQ privileged information estimation."""
-
-    def __init__(self, input_size: int, output_size: int, hidden_size: int = 128):
+    def __init__(
+            self,
+            input_shape: tuple[int, ...],
+            proprio_size: int,
+            vae_latent_size: int = 16,
+            activation=nn.ELU(),
+    ):
         super().__init__()
-        activation = nn.ELU()
 
-        self.mlp_mu = make_linear_layers(input_size, hidden_size, output_size,
-                                         activation_func=activation,
-                                         output_activation=False)
+        input_size = math.prod(input_shape)
+        self.encoder = make_linear_layers(input_size, 128, 64,
+                                          activation_func=activation)
 
-        self.mlp_logvar = make_linear_layers(input_size, hidden_size, output_size,
-                                             activation_func=activation,
-                                             output_activation=False)
+        self.mlp_latent = nn.Linear(64, vae_latent_size)
+        self.mlp_latent_logvar = nn.Linear(64, vae_latent_size)
 
-        self.decoder = make_linear_layers(output_size, 64, input_size,
+        self.mlp_vel = nn.Linear(64, 3)
+        self.mlp_vel_logvar = nn.Linear(64, 3)
+
+        self.decoder = make_linear_layers(vae_latent_size + 3, 64, proprio_size,
                                           activation_func=activation,
                                           output_activation=False)
 
-    def forward(self, obs_enc, mu_only: bool = False):
-        """Forward pass through VAE.
+    def forward(self, x, mu_only=False):
+        enc = self.encoder(x)
 
-        Args:
-            obs_enc: Encoded observations
-            mu_only: If True, only return mean (for inference)
+        mu_z, mu_vel = self.mlp_latent(enc), self.mlp_vel(enc)
 
-        Returns:
-            If mu_only: mean only
-            Otherwise: (reconstructed_obs, mean, log_variance)
-        """
         if mu_only:
-            return self.mlp_mu(obs_enc)
+            return mu_z, mu_vel
 
-        est_mu = self.mlp_mu(obs_enc)
-        est_logvar = self.mlp_logvar(obs_enc)
-        ot1 = self.decoder(self.reparameterize(est_mu, est_logvar))
-        return ot1, est_mu, est_logvar
+        logvar_z, logvar_vel = self.mlp_latent_logvar(enc), self.mlp_vel_logvar(enc)
+
+        z, vel = self.reparameterize(mu_z, logvar_z), self.reparameterize(mu_vel, logvar_vel)
+
+        ot1 = self.decoder(torch.cat([z, vel], dim=1))
+
+        return z, vel, ot1, mu_z, logvar_z, mu_vel, logvar_vel
 
     @staticmethod
     def reparameterize(mu: torch.Tensor, logvar: torch.Tensor) -> torch.Tensor:
-        """Reparameterization trick for VAE."""
         std = torch.exp(0.5 * logvar)
         eps = torch.randn_like(std)
         return eps * std + mu
@@ -144,54 +146,48 @@ class DreamWaQRecurrentActor(BaseRecurrentActor):
     def __init__(
             self,
             prop_shape: tuple[int, ...],
+            vae_latent_size: int,
             num_gru_layers: int,
             gru_hidden_size: int,
             actor_hidden_dims: Tuple[int, ...],
-            encoder_output_size: int,
             action_size: int
     ):
         super().__init__(action_size)
 
         self.activation = nn.ELU()
-        self.encoder_output_size = encoder_output_size
 
-        if len(prop_shape) == 1:
-            # without history
-            prop_size = prop_shape[0]
-        elif len(prop_shape) == 2:
-            # with history
-            prop_size = prop_shape[0] * prop_shape[1]
-        else:
-            raise ValueError(f'prop_shape {prop_shape} is not valid!')
+        prop_size = math.prod(prop_shape)
 
         self.gru = nn.GRU(input_size=prop_size, hidden_size=gru_hidden_size, num_layers=num_gru_layers)
         self.hidden_states = None
 
-        self.vae = VAE(input_size=gru_hidden_size, output_size=encoder_output_size)
+        self.vae = VAE(input_shape=(gru_hidden_size,), proprio_size=prop_size, vae_latent_size=vae_latent_size)
 
         self.actor_backbone = make_linear_layers(
-            encoder_output_size + prop_size,
+            vae_latent_size + 3 + prop_size,
             *actor_hidden_dims,
             action_size,
             activation_func=self.activation,
             output_activation=False
         )
 
-    def act(self,
+    def act(
+            self,
             obs: dict[str, torch.Tensor],
             use_estimated_value=True,
             eval_: bool = False,
-            **kwargs) -> torch.Tensor:
+            **kwargs
+    ) -> torch.Tensor:
         proprio = obs['proprio']
 
         # Process through GRU
         obs_enc, self.hidden_states = self.gru(proprio.unsqueeze(0), self.hidden_states)
 
         # Get VAE estimation
-        est_mu = self.vae(obs_enc.squeeze(0), mu_only=True)
+        z, vel = self.vae(obs_enc.squeeze(0))[:2]
 
         # Concatenate proprioception with VAE output
-        actor_input = torch.cat([proprio, self.activation(est_mu)], dim=1)
+        actor_input = torch.cat([z, vel, proprio], dim=1)
         mean = self.actor_backbone(actor_input)
 
         if eval_:
@@ -200,30 +196,23 @@ class DreamWaQRecurrentActor(BaseRecurrentActor):
         self.distribution = Normal(mean, torch.exp(self.log_std))
         return self.distribution.sample()
 
-    def train_act(self,
-                  obs: dict[str, torch.Tensor],
-                  hidden_states: torch.Tensor = None,
-                  **kwargs) -> None:
-
+    def train_act(
+            self,
+            obs: dict[str, torch.Tensor],
+            hidden_states: torch.Tensor = None,
+            **kwargs
+    ) -> torch.Tensor:
         proprio = obs['proprio']
 
         obs_enc, _ = self.gru(proprio, hidden_states)
 
         # Get VAE estimation
-        est_mu = recurrent_wrapper(self.vae.forward, obs_enc, mu_only=True)
+        z, vel = recurrent_wrapper(self.vae.forward, obs_enc)[:2]
 
         # Concatenate proprioception with VAE output
-        actor_input = torch.cat([proprio, self.activation(est_mu)], dim=2)
+        actor_input = torch.cat([z, vel, proprio], dim=2)
         mean = recurrent_wrapper(self.actor_backbone.forward, actor_input)
 
         self.distribution = Normal(mean, torch.exp(self.log_std))
 
-    def estimate(self, obs, hidden_states: Optional[torch.Tensor] = None, **kwargs) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
-        """Estimate privileged information using VAE.
-
-        Returns:
-            (reconstructed_obs, estimated_velocity, mean, log_variance)
-        """
-        obs_enc, _ = self.gru(obs.proprio, hidden_states)
-        ot1, est_mu, est_logvar = recurrent_wrapper(self.vae.forward, obs_enc, mu_only=False)
-        return ot1, est_mu[..., :3], est_mu, est_logvar
+        return obs_enc

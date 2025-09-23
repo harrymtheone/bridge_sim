@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Dict
+from typing import TYPE_CHECKING, Dict, Any
 
+import torch
 import torch.optim as optim
 
 from bridge_env.envs import BridgeEnv
@@ -22,7 +23,6 @@ class OdomVAE(PPO):
     def _init_components(self):
         # derive shapes from env
         prop_shape = self.env.observation_manager.group_obs_dim['proprio']
-        # est_shape = self.env.observation_manager.group_obs_dim['est_gt']
         scan_shape = self.env.observation_manager.group_obs_dim['scan']
         critic_obs_shape = self.env.observation_manager.group_obs_dim['critic_obs']
         action_size = self.env.action_manager.total_action_dim
@@ -66,12 +66,18 @@ class OdomVAE(PPO):
             hidden_size=self.cfg.actor_gru_hidden_size
         )
 
+        # next proprio buffer for VAE
+        self.storage.register_data_buffer('prop_next', prop_shape, torch.float)
+
     def _generate_actions(self, observations, **kwargs):
         return self.actor.act(observations, **kwargs)
 
     def process_env_step(self, rewards, terminated, timeouts, infos, **kwargs):
         if self.actor.is_recurrent:
             self.actor.reset(terminated | timeouts)
+
+        if 'obs_next' in kwargs:
+            self.storage.add_transitions('prop_next', kwargs['obs_next']['proprio'])
 
         super().process_env_step(rewards, terminated, timeouts, infos, **kwargs)
 
@@ -94,6 +100,7 @@ class OdomVAE(PPO):
         for batch in generator:
             # Extract batch data
             observations = batch['observations']
+            prop_next = batch['prop_next']
             hidden_states = batch['hidden_states'] if self.actor.is_recurrent else None
             masks = batch['masks'].squeeze(-1) if self.actor.is_recurrent else slice(None)
 
@@ -104,7 +111,7 @@ class OdomVAE(PPO):
             self._update_ppo(batch)
 
             # Update VAE (statistics tracked internally)
-            self._update_vae(vae_input, observations, masks)
+            self._update_vae(vae_input.detach(), observations, prop_next, masks)
 
         self.storage.clear()
 
@@ -119,7 +126,7 @@ class OdomVAE(PPO):
 
         return stats
 
-    def _update_vae(self, vae_input, observations, masks):
+    def _update_vae(self, vae_input, observations, prop_next, masks):
         """Update VAE network.
 
         Args:
@@ -133,10 +140,10 @@ class OdomVAE(PPO):
         )
 
         # Velocity estimation loss
-        estimation_loss = self.mse_loss(vel[masks], observations['est_gt'][masks])
+        vel_est_loss = self.mse_loss(vel[masks], observations['est_gt'][masks])
 
-        # Ot+1 prediction loss  TODO: what???
-        # prediction_loss = self.mse_loss(ot1[masks], obs_next_batch.proprio[masks])
+        # Ot+1 prediction loss
+        ot1_pred_loss = self.mse_loss(ot1[masks], prop_next[masks])
 
         # VAE loss for latent variable z
         vae_loss_z = 1 + logvar_z - mu_z.pow(2) - logvar_z.exp()
@@ -146,8 +153,8 @@ class OdomVAE(PPO):
         vae_loss_vel = 1 + logvar_vel - mu_vel.pow(2) - logvar_vel.exp()
         vae_loss_vel = -0.5 * vae_loss_vel[masks].sum(dim=1).mean()
 
-        # Total VAE loss
-        loss = estimation_loss + vae_loss_z + vae_loss_vel
+        # Total VAE loss with configurable weights
+        loss = vel_est_loss + ot1_pred_loss + self.cfg.vae_loss_z_coef * vae_loss_z + self.cfg.vae_loss_vel_coef * vae_loss_vel
 
         # VAE gradient step
         self.optimizer_vae.zero_grad()
@@ -155,10 +162,28 @@ class OdomVAE(PPO):
         self.optimizer_vae.step()
 
         # Track VAE statistics with proper labels
-        self.stats_tracker.add("Loss/vae_estimation_loss", estimation_loss)
         self.stats_tracker.add("Loss/vae_loss_z", vae_loss_z)
         self.stats_tracker.add("Loss/vae_loss_vel", vae_loss_vel)
+        self.stats_tracker.add("Loss/vel_est_loss", vel_est_loss)
+        self.stats_tracker.add("Loss/ot1_pred_loss", ot1_pred_loss)
+        
+        # Track VAE mu and std statistics
+        self.stats_tracker.add("VAE/mu_vel", mu_vel.mean())
+        self.stats_tracker.add("VAE/mu_z", mu_z.mean())
+        self.stats_tracker.add("VAE/std_vel", logvar_vel.exp().sqrt().mean())
+        self.stats_tracker.add("VAE/std_z", logvar_z.exp().sqrt().mean())
 
     def play_act(self, obs, eval_=True, **kwargs):
         """Generate actions for play/evaluation."""
-        return {'actions': self.actor.act(obs, eval_=eval_, **kwargs)}
+        return {'joint_pos': self.actor.act(obs, eval_=eval_, **kwargs)}
+
+    def load(self, loaded_dict: Dict[str, Any], load_optimizer: bool = True) -> Any:
+        super().load(loaded_dict, load_optimizer)
+
+        if load_optimizer and 'optimizer_vae_state_dict' in loaded_dict:
+            self.optimizer_vae.load_state_dict(loaded_dict['optimizer_vae_state_dict'])
+
+    def save(self) -> Dict[str, Any]:
+        save_dict = super().save()
+        save_dict['optimizer_vae_state_dict'] = self.optimizer_vae.state_dict()
+        return save_dict

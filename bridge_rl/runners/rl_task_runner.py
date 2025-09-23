@@ -25,6 +25,7 @@ class RLRunner:
         self.cfg = cfg
 
         self.env = BridgeEnv(cfg=cfg.env)
+        # self.env = ManagerBasedRLEnv(cfg=cfg.env)
 
         # Create algorithm
         self.algorithm = cfg.algorithm.class_type(cfg.algorithm, env=self.env)
@@ -62,7 +63,6 @@ class RLRunner:
                     # TODO ------------------
 
                     actions = self.algorithm.act(observations)
-                    # actions = {'action': torch.zeros(self.env.num_envs, 13, device=self.device)}
 
                     observations, rewards, terminated, timeouts, infos = self.env.step(actions)
 
@@ -70,7 +70,7 @@ class RLRunner:
                         if self.cfg.only_positive_reward_until is None or self.cur_it < self.cfg.only_positive_reward_until:
                             rewards = torch.clamp(rewards, min=0.)
 
-                    self.algorithm.process_env_step(rewards, terminated, timeouts, infos)
+                    self.algorithm.process_env_step(rewards, terminated, timeouts, infos, obs_next=observations)
                     self.episode_logger.step(rewards, terminated, timeouts)
 
                 self.algorithm.compute_returns(observations)
