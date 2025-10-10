@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import math
-from typing import Optional, Any
+from typing import Optional
 
 import torch
 import torch.nn as nn
@@ -23,7 +23,7 @@ class BaseActor(nn.Module):
         # Disable args validation for speedup
         Normal.set_default_validate_args = False
 
-    def act(self, obs, eval_: bool = False, **kwargs) -> torch.Tensor:
+    def act(self, obs, eval_: bool = False, **kwargs) -> torch.Tensor | tuple[torch.Tensor, ...]:
         """Generate actions from observations.
 
         Args:
@@ -35,18 +35,6 @@ class BaseActor(nn.Module):
             Actions tensor
         """
         raise NotImplementedError("Subclasses must implement act method")
-
-    def train_act(self, obs, **kwargs) -> Optional[Any]:
-        """Generate actions during training (batch mode).
-
-        Args:
-            obs: Batch of observations
-            **kwargs: Additional arguments (e.g., hidden_states for recurrent actors)
-
-        Returns:
-            Optional additional data for training
-        """
-        raise NotImplementedError("Subclasses must implement train_act method")
 
     def get_actions_log_prob(self, actions: torch.Tensor) -> torch.Tensor:
         """Get log probabilities of given actions.
@@ -80,7 +68,7 @@ class BaseActor(nn.Module):
         """Get entropy of current action distribution."""
         if self.distribution is None:
             raise RuntimeError("Distribution not set. Call act() first.")
-        return self.distribution.entropy().sum(dim=-1)
+        return self.distribution.entropy().sum(dim=-1, keepdim=True)
 
     def reset_std(self, std: float, device: torch.device) -> None:
         """Reset action standard deviation."""
@@ -99,22 +87,16 @@ class BaseRecurrentActor(BaseActor):
 
     is_recurrent: bool = True
 
-    def __init__(self, action_size: int):
-        super().__init__(action_size)
-        self.hidden_states: Optional[torch.Tensor] = None
-
     def init_hidden_states(self, num_envs: int, device: torch.device) -> None:
         raise NotImplementedError
 
-    def get_hidden_states(self) -> Optional[torch.Tensor]:
+    def get_hidden_states(self) -> torch.Tensor:
         """Get current hidden states.
 
         Returns:
             Hidden states tensor or None if not initialized
         """
-        if self.hidden_states is None:
-            return None
-        return self.hidden_states.detach()
+        raise NotImplementedError
 
     def reset(self, dones: torch.Tensor) -> None:
         """Reset hidden states for done environments.
@@ -122,13 +104,7 @@ class BaseRecurrentActor(BaseActor):
         Args:
             dones: Boolean tensor indicating which environments are done
         """
-        if self.hidden_states is not None:
-            self.hidden_states[:, dones] = 0.0
-
-    def detach_hidden_states(self) -> None:
-        """Detach hidden states from computation graph."""
-        if self.hidden_states is not None:
-            self.hidden_states = self.hidden_states.detach()
+        raise NotImplementedError
 
 
 class BaseCritic(nn.Module):
@@ -140,7 +116,7 @@ class BaseCritic(nn.Module):
     def __init__(self):
         super().__init__()
 
-    def evaluate(self, critic_obs, **kwargs) -> torch.Tensor:
+    def evaluate(self, critic_obs: dict[str, torch.Tensor], **kwargs) -> torch.Tensor:
         """Evaluate state values.
 
         Args:
@@ -162,7 +138,7 @@ class PPOCritic(BaseCritic):
 
         activation = nn.ELU()
 
-        if len(critic_obs_shape) in (1, 2):
+        if len(critic_obs_shape) == 2:
             critic_obs_size = critic_obs_shape[-1]
         else:
             raise ValueError(f'critic_obs_shape {critic_obs_shape} is not valid!')
@@ -184,18 +160,26 @@ class PPOCritic(BaseCritic):
 
         # Value function network
         self.critic = make_linear_layers(
-            128 + 64,
-            *critic_hidden_dims,
-            1,
+            128 + 64, *critic_hidden_dims, 1,
             activation_func=activation,
             output_activation=False
         )
 
     def evaluate(self, obs: dict[str, torch.Tensor], **kwargs) -> torch.Tensor:
+        critic_obs = obs['critic_obs']
+        scan = obs['scan']
 
-        if obs['critic_obs'].ndim == 3:
-            priv_latent = self.priv_enc(obs['critic_obs'].transpose(1, 2))
-            scan_enc = self.scan_enc(obs['scan'].flatten(1))
-            return self.critic(torch.cat([priv_latent, scan_enc], dim=1))
+        remove_seq_dim = False
+        if critic_obs.ndim == 3:
+            critic_obs = critic_obs.unsqueeze(0)
+            scan = scan.unsqueeze(0)
+            remove_seq_dim = True
+
+        priv_latent = recurrent_wrapper(self.priv_enc, critic_obs.transpose(2, 3))
+        scan_enc = self.scan_enc(scan.flatten(2))
+        value = self.critic(torch.cat([priv_latent, scan_enc], dim=-1))
+
+        if remove_seq_dim:
+            return value.squeeze(0)
         else:
-            return recurrent_wrapper(self.evaluate, obs)
+            return value

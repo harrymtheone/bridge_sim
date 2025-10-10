@@ -20,21 +20,18 @@ def make_linear_layers(*shape, activation_func=None, output_activation=True):
     return layers
 
 
-def recurrent_wrapper(func: callable,
-                      obs: torch.Tensor | dict[str, torch.Tensor],
-                      **kwargs):
-    if isinstance(obs, torch.Tensor):
-        seq_batch = obs.shape[:2]
-        rtn = func(obs.flatten(0, 1), **kwargs)
-    elif isinstance(obs, dict):
-        seq_batch = next(iter(obs.values())).shape[:2]
-        rtn = func({k: v.flatten(0, 1) for k, v in obs.items()}, **kwargs)
-    else:
-        raise TypeError('obs must be actions torch.Tensor or actions dict!')
-
-    if type(rtn) is tuple:
-        return [r.unflatten(0, seq_batch) for r in rtn]
-    else:
-        return rtn.unflatten(0, seq_batch)
+def recurrent_wrapper(func: callable, tensor: torch.Tensor, ):
+    n_seq = tensor.size(0)
+    return func(tensor.flatten(0, 1)).unflatten(0, (n_seq, -1))
 
 
+def masked_MSE(input_, target, mask):
+    return ((input_ - target) * mask).square().sum() / (input_.numel() / mask.numel() * mask.sum())
+
+
+def masked_L1(input_, target, mask):
+    return ((input_ - target) * mask).abs().sum() / (input_.numel() / mask.numel() * mask.sum())
+
+
+def masked_mean(input_, mask):
+    return (input_ * mask).sum() / (input_.numel() / mask.numel() * mask.sum())

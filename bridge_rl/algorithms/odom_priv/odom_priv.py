@@ -34,7 +34,7 @@ class OdomPriv(PPO):
             actor_hidden_dims=self.cfg.actor_hidden_dims,
             action_size=action_size,
         ).to(self.device)
-        self.actor.init_hidden_states(self.env.num_envs, self.device)
+        self.actor.init_hidden_states(self.num_envs, self.device)
 
         self.critic = PPOCritic(
             critic_obs_shape=critic_obs_shape,

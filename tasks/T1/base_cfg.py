@@ -10,8 +10,8 @@ from isaaclab.assets import ArticulationCfg
 from isaaclab.assets import AssetBaseCfg
 from isaaclab.managers import SceneEntityCfg, TerminationTermCfg, EventTermCfg, CurriculumTermCfg
 from isaaclab.scene import InteractiveSceneCfg
-from isaaclab.sensors import ContactSensorCfg, RayCasterCfg
-from isaaclab.sim import UsdFileCfg, RigidBodyPropertiesCfg, ArticulationRootPropertiesCfg
+from isaaclab.sensors import ContactSensorCfg, RayCasterCfg, CameraCfg
+from isaaclab.sim import UsdFileCfg, RigidBodyPropertiesCfg, ArticulationRootPropertiesCfg, PinholeCameraCfg
 from isaaclab.terrains import TerrainImporterCfg
 from isaaclab.utils import configclass
 
@@ -155,7 +155,7 @@ class T1SceneCfg(InteractiveSceneCfg):
         ray_alignment="yaw",
         update_period=0.02 * 5,
         history_length=0,
-        debug_vis=True,
+        debug_vis=False,
     )
 
     left_feet_scanner = RayCasterV2Cfg(
@@ -183,6 +183,33 @@ class T1SceneCfg(InteractiveSceneCfg):
         ray_alignment="base_v",
         update_period=0.02,
         debug_vis=False,
+    )
+
+
+@configclass
+class T1SceneWithDepthCfg(T1SceneCfg):
+    depth_front = CameraCfg(
+        prim_path="{ENV_REGEX_NS}/depth_front",
+
+        spawn=PinholeCameraCfg(
+            # clipping_range=(0.1, 200.0),
+            # focal_length=0.188,
+            # horizontal_aperture=0.384,
+            # vertical_aperture=0.216,
+        ),
+        # depth_clipping_behavior="max",
+        data_types=["rgb"],
+        width=256,
+        height=256,
+
+        # offset=TiledCameraCfg.OffsetCfg(
+        #     pos=(0.17, 0., 0.01),
+        #     rot=(0.866, 0., -0.5, 0.),
+        # ),
+        #
+        # update_period=0.02 * 5,
+        # history_length=2,
+        # debug_vis=True,
     )
 
 

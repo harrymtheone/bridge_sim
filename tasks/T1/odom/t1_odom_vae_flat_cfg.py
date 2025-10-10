@@ -197,5 +197,6 @@ class T1OdomVAEFlatTaskCfg(RLTaskCfg):
 
     algorithm = OdomVAECfg()
     algorithm.observations.scan.scan.params = dict(sensor_cfg=SceneEntityCfg("scanner"), offset=-0.7)
+    algorithm.observations.depth = None
 
     max_iterations: int = 10000

@@ -226,6 +226,7 @@ class RayCasterV2(SensorBase):
         # fill the data buffer
         self._data.pos_w = torch.zeros(self._view.count, 3, device=self._device)
         self._data.quat_w = torch.zeros(self._view.count, 4, device=self._device)
+        self._data.ray_starts_w = torch.zeros(self._view.count, self.num_rays, 3, device=self._device)
         self._data.ray_hits_w = torch.zeros(self._view.count, self.num_rays, 3, device=self._device)
 
     def _update_buffers_impl(self, env_ids: Sequence[int]):
@@ -283,7 +284,7 @@ class RayCasterV2(SensorBase):
             raise RuntimeError(f"Unsupported ray_alignment type: {self.cfg.ray_alignment}.")
 
         # ray cast and store the hits
-        self._data.ray_starts_w = ray_starts_w
+        self._data.ray_starts_w[env_ids] = ray_starts_w
         self._data.ray_hits_w[env_ids] = raycast_mesh(
             ray_starts_w,
             ray_directions_w,

@@ -20,11 +20,11 @@ class RewardsCfg:
         params={"command_name": "base_velocity", "std": 0.5},
     )
     track_ang_vel_z_exp = RewardTermCfg(
-        func=mdp.rew.track_ang_vel_z_world_exp, weight=2.0, params={"command_name": "base_velocity", "std": 0.5}
+        func=mdp.rew.track_ang_vel_z_world_exp, weight=1.0, params={"command_name": "base_velocity", "std": 0.5}
     )
     feet_air_time = RewardTermCfg(
         func=mdp.rew.feet_air_time_positive_biped,
-        weight=0.25,
+        weight=0.75,
         params={
             "command_name": "base_velocity",
             "sensor_cfg": SceneEntityCfg("contact_forces", body_names=".*_foot_link"),
@@ -42,11 +42,11 @@ class RewardsCfg:
 
     # -- penalties
     flat_orientation_l2 = RewardTermCfg(func=mdp.rew.flat_orientation_l2, weight=0.0)
-    lin_vel_z_l2 = RewardTermCfg(func=mdp.rew.lin_vel_z_l2, weight=-2.0)
+    lin_vel_z_l2 = RewardTermCfg(func=mdp.rew.lin_vel_z_l2, weight=-0.2)
     ang_vel_xy_l2 = RewardTermCfg(func=mdp.rew.ang_vel_xy_l2, weight=-0.05)
-    dof_torques_l2 = RewardTermCfg(func=mdp.rew.joint_torques_l2, weight=-1.0e-5)
-    dof_acc_l2 = RewardTermCfg(func=mdp.rew.joint_acc_l2, weight=-2.5e-7)
-    action_rate_l2 = RewardTermCfg(func=mdp.rew.action_rate_l2_v2, weight=-0.01)
+    dof_torques_l2 = RewardTermCfg(func=mdp.rew.joint_torques_l2, weight=-2.0e-6)
+    dof_acc_l2 = RewardTermCfg(func=mdp.rew.joint_acc_l2, weight=-1.0e-7)
+    action_rate_l2 = RewardTermCfg(func=mdp.rew.action_rate_l2_v2, weight=-0.005)
 
     # Penalize ankle joint limits
     dof_pos_limits = RewardTermCfg(
@@ -76,7 +76,6 @@ class T1FlatEnvCfg(BridgeEnvCfg):
     scene = T1SceneCfg(
         num_envs=4096,
         env_spacing=2.0,
-
     )
     scene.terrain = TerrainImporterCfg(
         prim_path="/World/defaultGroundPlane",

@@ -3,12 +3,21 @@ from __future__ import annotations
 from collections import deque
 from typing import TYPE_CHECKING
 
+import matplotlib
+import matplotlib.pyplot as plt
 import numpy as np
 import torch
 from rich.table import Table
 
+# VisPy for GPU-accelerated visualization
+import vispy
+from vispy import app, scene, color
+from vispy.scene import visuals
+
 if TYPE_CHECKING:
     from bridge_env.envs import ParkourEnv
+
+matplotlib.use('TkAgg')  # Use a faster interactive backend than default
 
 real_vx_avg = real_vy_avg = real_vz_avg = real_yaw_avg = 0.
 zero = 0.
@@ -89,10 +98,207 @@ def gen_info_panel(env: ParkourEnv):
     return grid
 
 
-import matplotlib
+class VispyImageViewer:
+    """GPU-accelerated real-time image viewer using VisPy"""
+    
+    def __init__(self, title: str = "VisPy Image Viewer", size: tuple = (800, 600)):
+        
+        # Set VisPy backend (try different backends for headless compatibility)
+        try:
+            app.use_app('qt')  # Try Qt first
+        except:
+            try:
+                app.use_app('glfw')  # Try GLFW for headless
+            except:
+                app.use_app()  # Use default
+        
+        # Create canvas and scene
+        self.canvas = scene.SceneCanvas(
+            title=title, 
+            size=size, 
+            show=True,
+            bgcolor='black'
+        )
+        
+        # Create view and image visual
+        self.view = self.canvas.central_widget.add_view()
+        self.image_visual = visuals.Image(parent=self.view.scene)
+        
+        # Set up camera
+        self.view.camera = scene.PanZoomCamera(aspect=1)
+        self.view.camera.flip = (0, 1, 0)  # Flip Y axis to match image coordinates
+        
+        # Store image properties
+        self.current_image = None
+        
+    def show_image(self, img: np.ndarray, colormap: str = 'viridis'):
+        """Display image with GPU acceleration"""
+        # Normalize image if needed
+        if img.dtype != np.uint8 and img.dtype != np.float32:
+            if img.max() > 1.0:
+                img = img.astype(np.float32) / 255.0
+            else:
+                img = img.astype(np.float32)
+        
+        # Handle different image formats
+        if len(img.shape) == 2:  # Grayscale
+            # Convert to RGB using colormap
+            if colormap == 'viridis':
+                cmap = color.get_colormap('viridis')
+                img_colored = cmap[img]
+            elif colormap == 'gray':
+                img_colored = np.stack([img] * 3, axis=-1)
+            else:
+                cmap = color.get_colormap(colormap)
+                img_colored = cmap[img]
+        else:  # RGB/RGBA
+            img_colored = img
+        
+        # Update image visual
+        self.image_visual.set_data(img_colored)
+        
+        # Auto-fit camera on first image
+        if self.current_image is None:
+            self.view.camera.set_range()
+        
+        self.current_image = img_colored
+        
+        # Process events without blocking
+        self.canvas.update()
+        app.process_events()
+    
+    def show_image_blocking(self, img: np.ndarray, colormap: str = 'viridis'):
+        """Display image and block until window is closed"""
+        self.show_image(img, colormap)
+        app.run()
+    
+    def close(self):
+        """Close the viewer"""
+        self.canvas.close()
 
-matplotlib.use('TkAgg')  # Use a faster interactive backend than default
-import matplotlib.pyplot as plt
+
+class VispyRealTimeViewer:
+    """Real-time streaming image viewer using VisPy with timer updates"""
+    
+    def __init__(self, title: str = "Real-time Viewer", size: tuple = (800, 600), fps: int = 60):
+        # Set up VisPy backend
+        try:
+            app.use_app('qt')
+        except:
+            try:
+                app.use_app('glfw')
+            except:
+                app.use_app()
+        
+        self.fps = fps
+        self.canvas = scene.SceneCanvas(
+            title=title,
+            size=size,
+            show=True,
+            bgcolor='black'
+        )
+        
+        self.view = self.canvas.central_widget.add_view()
+        self.image_visual = visuals.Image(parent=self.view.scene)
+        self.view.camera = scene.PanZoomCamera(aspect=1)
+        self.view.camera.flip = (0, 1, 0)
+        
+        # Image buffer for streaming
+        self.image_buffer = None
+        self.colormap = 'viridis'
+        
+        # Timer for updates
+        self.timer = app.Timer(1.0 / fps, connect=self.update, start=True)
+        
+    def set_image(self, img: np.ndarray, colormap: str = 'viridis'):
+        """Set the image to be displayed (non-blocking)"""
+        self.image_buffer = img.copy()
+        self.colormap = colormap
+    
+    def update(self, event):
+        """Timer callback to update display"""
+        if self.image_buffer is not None:
+            img = self.image_buffer
+            
+            # Normalize image
+            if img.dtype != np.uint8 and img.dtype != np.float32:
+                if img.max() > 1.0:
+                    img = img.astype(np.float32) / 255.0
+                else:
+                    img = img.astype(np.float32)
+            
+            # Handle grayscale to color conversion
+            if len(img.shape) == 2:
+                if self.colormap == 'gray':
+                    img_colored = np.stack([img] * 3, axis=-1)
+                else:
+                    cmap = color.get_colormap(self.colormap)
+                    img_colored = cmap[img]
+            else:
+                img_colored = img
+            
+            self.image_visual.set_data(img_colored)
+            
+            # Auto-fit on first frame
+            if not hasattr(self, '_fitted'):
+                self.view.camera.set_range()
+                self._fitted = True
+    
+    def start(self):
+        """Start the real-time viewer (blocking)"""
+        app.run()
+    
+    def close(self):
+        """Close the viewer"""
+        self.timer.stop()
+        self.canvas.close()
+
+
+def visualize_depth_image(
+        win_name: str,
+        img: np.ndarray,
+        near_clip: float = 0.1,
+        far_clip: float = 2.0,
+        colormap: str = 'viridis',
+        blocking: bool = False
+):
+    """Fast depth image visualization using VisPy GPU acceleration"""
+    # Fallback to matplotlib
+    img_normalized = (img - near_clip) / (far_clip - near_clip)
+    img_normalized = np.clip(img_normalized, 0, 1)
+    plt.figure(win_name)
+    plt.imshow(img_normalized, cmap=colormap)
+    plt.colorbar()
+    plt.title(win_name)
+    plt.show(block=blocking)
+    return None
+    
+    # Normalize depth image
+    img_normalized = (img - near_clip) / (far_clip - near_clip)
+    img_normalized = np.clip(img_normalized, 0, 1).astype(np.float32)
+    
+    # Create viewer and display
+    viewer = VispyImageViewer(title=win_name)
+    
+    if blocking:
+        viewer.show_image_blocking(img_normalized, colormap)
+    else:
+        viewer.show_image(img_normalized, colormap)
+    
+    return viewer
+
+
+def create_real_time_depth_viewer(
+        title: str = "Real-time Depth Viewer",
+        size: tuple = (800, 600),
+        fps: int = 60,
+        colormap: str = 'viridis'
+) -> VispyRealTimeViewer:
+    """Create a real-time depth image viewer for continuous streaming"""
+    if not VISPY_AVAILABLE:
+        raise ImportError("VisPy not available. Install with: pip install vispy")
+    
+    return VispyRealTimeViewer(title=title, size=size, fps=fps)
 
 
 class BaseVisualizer:

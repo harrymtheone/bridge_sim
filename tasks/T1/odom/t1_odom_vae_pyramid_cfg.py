@@ -7,7 +7,7 @@ from bridge_env import mdp
 from bridge_env.envs import BridgeEnvCfg
 from bridge_rl.algorithms import OdomVAECfg
 from bridge_rl.runners import RLTaskCfg
-from tasks.T1 import T1ActionsCfg, T1CommandsCfg, T1CurriculumCfg, T1EventCfg, T1MotionGeneratorCfg, T1SceneCfg, T1TerminationsCfg
+from tasks.T1 import T1ActionsCfg, T1CommandsCfg, T1CurriculumCfg, T1EventCfg, T1MotionGeneratorCfg, T1SceneCfg, T1TerminationsCfg, T1SceneWithDepthCfg
 
 
 @configclass
@@ -154,7 +154,7 @@ class T1PyramidEnvCfg(BridgeEnvCfg):
 
     sim = SimulationCfg(dt=0.002, render_interval=10)
 
-    scene = T1SceneCfg(
+    scene = T1SceneWithDepthCfg(
         num_envs=4096,
         env_spacing=2.0,
         terrain=terrains.TerrainImporterCfg(
@@ -219,5 +219,8 @@ class T1OdomVAEPyramidTaskCfg(RLTaskCfg):
         continue_from_last_std=False,
     )
     algorithm.observations.scan.scan.params = dict(sensor_cfg=SceneEntityCfg("scanner"), offset=-0.7)
+    algorithm.observations.depth.depth_front.params["sensor_cfg"] = SceneEntityCfg("depth_front")
+    algorithm.observations.depth.depth_front.params["data_type"] = "rgb"
+    # algorithm.observations.depth = None
 
     max_iterations: int = 10000

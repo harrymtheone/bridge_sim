@@ -41,7 +41,7 @@ def main(args):
     task_cfg.resume_id = args.exptid
     task_cfg.checkpoint = getattr(args, "checkpoint", -1)
 
-    task_cfg.env.scene.num_envs = 8
+    task_cfg.env.scene.num_envs = 4
     if isinstance(task_cfg.env.scene.terrain, TerrainImporterCfg) and task_cfg.env.scene.terrain.terrain_generator is not None:
         task_cfg.env.scene.terrain.terrain_generator.num_rows = 4
         task_cfg.env.scene.terrain.terrain_generator.num_cols = 4
@@ -51,6 +51,8 @@ def main(args):
     runner.algorithm.eval()
 
     observations, infos = env.reset()
+    
+    depth_viewer = vis.FastMatplotlibViewer(title="Isaac Sim Depth Camera", figsize=(8, 6))
 
     with Live(vis.gen_info_panel(env)) as live:
         while True:
@@ -64,7 +66,6 @@ def main(args):
             # phase = self.env.command_manager.default_term.get_phase()
             # actions[self.env.lookat_id, 0] = 0.1 * torch.sin(2 * torch.pi * phase[self.env.lookat_id, 0])
 
-            # actions = {'action': actions}
             observations, rewards, terminated, timeouts, infos = env.step(actions)
 
             live.update(vis.gen_info_panel(env))

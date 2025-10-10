@@ -7,7 +7,7 @@ from isaaclab.utils import configclass
 
 from bridge_env import mdp
 from bridge_rl.algorithms import UniversalProprioWithPhase, UniversalCriticObsWithPhase, PPOCfg
-from . import OdomVAE
+from . import PIE
 
 
 @configclass
@@ -17,16 +17,30 @@ class OdomObservationCfg:
         scan = ObservationTermCfg(func=mdp.obs.height_scan_1d, params=MISSING)
 
     @configclass
-    class Depth(ObservationGroupCfg):
-        depth_front = ObservationTermCfg(func=mdp.obs.image, params=dict(sensor_cfg=MISSING, data_type="depth"))
-
-    @configclass
     class EstGT(ObservationGroupCfg):
         vel = ObservationTermCfg(func=mdp.obs.base_lin_vel)
 
-    proprio = UniversalProprioWithPhase()
+    proprio = UniversalProprioWithPhase(
+        history_length=10,
+        flatten_history_dim=False,
+    )
 
-    depth = Depth()
+    # depth = ObservationGroupCfg(
+    #     terms={
+    #         'front': ObservationTermCfg(
+    #             func=mdp.obs.image,
+    #             params=dict(sensor_cfg=MISSING, data_type="depth"),
+    #             # noise=GaussianNoiseCfg(mean=0., std=0.05),
+    #             # modifiers=  # TODO: we need gaussian filer here
+    #         ),
+    #         'back': ObservationTermCfg(
+    #             func=mdp.obs.image,
+    #             params=dict(sensor_cfg=MISSING, data_type="depth"),
+    #             # noise=GaussianNoiseCfg(mean=0., std=0.05),
+    #             # modifiers=  # TODO: we need gaussian filer here
+    #         )
+    #     }
+    # )
 
     scan = Scan()
 
@@ -40,8 +54,8 @@ class OdomObservationCfg:
 
 
 @configclass
-class OdomVAECfg(PPOCfg):
-    class_type: type = OdomVAE
+class PIECfg(PPOCfg):
+    class_type: type = PIE
 
     observations = OdomObservationCfg()
 

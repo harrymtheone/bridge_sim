@@ -48,7 +48,8 @@ class DreamWaQCfg(PPOCfg):
     vae_latent_size: int = 16
     vel_est_loss_coef: float = 1.0
     ot1_pred_loss_coef: float = 1.0
-    kl_loss_coef: float = 1.0
+    kl_coef_vel: float = 1.0
+    kl_coef_z: float = 1.0
 
     # other parameters
     symmetry_loss_coef: float = 1.0

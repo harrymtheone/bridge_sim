@@ -1,14 +1,14 @@
-from isaaclab import sim as sim_utils
-from isaaclab.assets import AssetBaseCfg
-from isaaclab.managers import SceneEntityCfg, RewardTermCfg, ObservationTermCfg
+import isaaclab.sim as sim_utils
+from isaaclab.managers import SceneEntityCfg, RewardTermCfg
 from isaaclab.sim import SimulationCfg
+from isaaclab.terrains import TerrainImporterCfg
 from isaaclab.utils import configclass
 
 from bridge_env import mdp
 from bridge_env.envs import BridgeEnvCfg
-from bridge_rl.algorithms import DreamWaQCfg
+from bridge_rl.algorithms import PIECfg
 from bridge_rl.runners import RLTaskCfg
-from tasks.T1 import T1SceneCfg, T1ActionsCfg, T1TerminationsCfg, T1EventCfg, T1MotionGeneratorCfg, T1CommandsCfg
+from tasks.T1 import T1ActionsCfg, T1CommandsCfg, T1EventCfg, T1MotionGeneratorCfg, T1SceneWithDepthCfg, T1TerminationsCfg
 
 
 @configclass
@@ -33,7 +33,7 @@ class RewardsCfg:
 
     feet_clearance = RewardTermCfg(
         func=mdp.rew.feet_clearance_masked,
-        weight=0.6,
+        weight=1.2,
         params=dict(
             command_name="phase",
             sensor_l_cfg=SceneEntityCfg("left_feet_scanner"),
@@ -102,16 +102,16 @@ class RewardsCfg:
         )
     )
 
-    # foothold = RewardTermCfg(
-    #     func=mdp.rew.foothold,
-    #     weight=-0.1,
-    #     params=dict(
-    #         scanner_l_cfg=SceneEntityCfg("left_feet_scanner"),
-    #         scanner_r_cfg=SceneEntityCfg("right_feet_scanner"),
-    #         contact_sensor_cfg=SceneEntityCfg("contact_forces", body_names=".*foot.*"),
-    #         foothold_contact_thresh=0.03 + 0.01,
-    #     )
-    # )
+    foothold = RewardTermCfg(
+        func=mdp.rew.foothold,
+        weight=-0.1,
+        params=dict(
+            scanner_l_cfg=SceneEntityCfg("left_feet_scanner"),
+            scanner_r_cfg=SceneEntityCfg("right_feet_scanner"),
+            contact_sensor_cfg=SceneEntityCfg("contact_forces", body_names=".*foot.*"),
+            foothold_contact_thresh=0.03 + 0.01,
+        )
+    )
 
     # ##################################### regularization #####################################
     joint_pos_deviation = RewardTermCfg(
@@ -120,11 +120,11 @@ class RewardsCfg:
         params=dict(asset_cfg=SceneEntityCfg("robot", joint_names=".*")),
     )
 
-    # joint_yr_pos_deviation = RewardTermCfg(
-    #     func=mdp.rew.joint_deviation_l1,
-    #     weight=-0.5,
-    #     params=dict(asset_cfg=SceneEntityCfg("robot", joint_names=(".*Yaw", ".*Roll"))),
-    # )
+    joint_yr_pos_deviation = RewardTermCfg(
+        func=mdp.rew.joint_deviation_l1,
+        weight=-0.5,
+        params=dict(asset_cfg=SceneEntityCfg("robot", joint_names=(".*Yaw", ".*Roll"))),
+    )
 
     base_orientation = RewardTermCfg(func=mdp.rew.flat_orientation_l2, weight=-10.0)
     lin_vel_z = RewardTermCfg(func=mdp.rew.lin_vel_z_l2, weight=-2.0)
@@ -133,7 +133,7 @@ class RewardsCfg:
     # ##################################### energy #####################################
     action_rate = RewardTermCfg(func=mdp.rew.action_rate_l2_v2, weight=-0.01)
     dof_torques = RewardTermCfg(func=mdp.rew.joint_torques_l2, weight=-1.0e-5)
-    # dof_acc = RewardTermCfg(func=mdp.rew.joint_acc_l2, weight=-2.5e-7)
+    dof_acc = RewardTermCfg(func=mdp.rew.joint_acc_l2, weight=-2.5e-7)
 
     undesired_contacts = RewardTermCfg(
         func=mdp.rew.undesired_contacts,
@@ -144,7 +144,7 @@ class RewardsCfg:
         ),
     )
 
-    # dof_pos_limits = RewardTermCfg(func=mdp.joint_pos_limits, weight=-10.0)
+    dof_pos_limits = RewardTermCfg(func=mdp.rew.joint_pos_limits, weight=-10.0)
 
 
 @configclass
@@ -155,10 +155,22 @@ class T1FlatEnvCfg(BridgeEnvCfg):
 
     sim = SimulationCfg(dt=0.002, render_interval=10)
 
-    scene = T1SceneCfg(
+    scene = T1SceneWithDepthCfg(
         num_envs=4096,
         env_spacing=2.0,
-        terrain=AssetBaseCfg(prim_path="/World/defaultGroundPlane", spawn=sim_utils.GroundPlaneCfg())
+        terrain=TerrainImporterCfg(
+            prim_path="/World/defaultGroundPlane",
+            terrain_type="plane",
+            terrain_generator=None,
+            max_init_terrain_level=5,
+            physics_material=sim_utils.RigidBodyMaterialCfg(
+                friction_combine_mode="multiply",
+                restitution_combine_mode="multiply",
+                static_friction=1.0,
+                dynamic_friction=1.0,
+            ),
+            debug_vis=False,
+        )
     )
 
     curriculum = None
@@ -177,13 +189,13 @@ class T1FlatEnvCfg(BridgeEnvCfg):
 
 
 @configclass
-class T1DreamWaqFlatTaskCfg(RLTaskCfg):
+class T1PIEFlatTaskCfg(RLTaskCfg):
     env: T1FlatEnvCfg = T1FlatEnvCfg()
 
     only_positive_reward = True
-    only_positive_reward_until = 200
+    only_positive_reward_until = 500
 
-    algorithm = DreamWaQCfg()
-    algorithm.observations.scan.scan = ObservationTermCfg(func=mdp.obs.height_scan, params={"sensor_cfg": SceneEntityCfg("scanner")})
+    algorithm = PIECfg()
+    algorithm.observations.scan.scan.params = dict(sensor_cfg=SceneEntityCfg("scanner"), offset=-0.7)
 
     max_iterations: int = 10000
