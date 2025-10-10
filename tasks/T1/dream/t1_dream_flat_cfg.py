@@ -145,6 +145,7 @@ class RewardsCfg:
     )
 
     # dof_pos_limits = RewardTermCfg(func=mdp.joint_pos_limits, weight=-10.0)
+    termination_penalty = RewardTermCfg(func=mdp.rew.is_terminated, weight=-200.0)
 
 
 @configclass
@@ -180,8 +181,8 @@ class T1FlatEnvCfg(BridgeEnvCfg):
 class T1DreamWaqFlatTaskCfg(RLTaskCfg):
     env: T1FlatEnvCfg = T1FlatEnvCfg()
 
-    only_positive_reward = True
-    only_positive_reward_until = 200
+    # only_positive_reward = True
+    # only_positive_reward_until = 500
 
     algorithm = DreamWaQCfg()
     algorithm.observations.scan.scan = ObservationTermCfg(func=mdp.obs.height_scan, params={"sensor_cfg": SceneEntityCfg("scanner")})

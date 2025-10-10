@@ -52,15 +52,13 @@ def main(args):
 
     observations, infos = env.reset()
     
-    depth_viewer = vis.FastMatplotlibViewer(title="Isaac Sim Depth Camera", figsize=(8, 6))
-
     with Live(vis.gen_info_panel(env)) as live:
         while True:
             observations['use_estimated_values'] = torch.zeros(env.num_envs, dtype=torch.bool, device=env.device)  # TODO: not finished here?!
 
             actions = runner.algorithm.play_act(observations)
 
-            # actions = {"joint_pos": env.motion_generator.get_motion('ref_motion') - env.scene['robot'].data.default_joint_pos}
+            actions = {"joint_pos": env.motion_generator.get_motion('ref_motion') - env.scene['robot'].data.default_joint_pos}
 
             # actions = torch.zeros_like(actions)
             # phase = self.env.command_manager.default_term.get_phase()

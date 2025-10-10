@@ -190,7 +190,7 @@ class DreamWaQRecurrentActor(BaseRecurrentActor):
         obs_enc, self.hidden_states = self.gru(proprio, self.hidden_states)
 
         # Get VAE estimation
-        vel, z = self.vae(obs_enc)[:2]
+        vel, z = self.vae(obs_enc, sample=not eval_)[:2]
 
         # Concatenate proprioception with VAE output
         mean = self.actor_backbone(torch.cat([vel, z, proprio], dim=-1))

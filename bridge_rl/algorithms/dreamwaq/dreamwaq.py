@@ -128,8 +128,8 @@ class DreamWaQ(PPO):
             # Update PPO
             self._update_ppo(batch)
 
-            # # Update VAE
-            # self._update_vae(batch)
+            # Update VAE
+            self._update_vae(batch)
 
         self.storage.clear()
 
@@ -197,7 +197,8 @@ class DreamWaQ(PPO):
 
     def play_act(self, obs, **kwargs):
         """Generate actions for play/evaluation."""
-        return {'joint_pos': self.actor.act(obs, eval_=True, **kwargs)}
+        actions, vel, z = self.actor.act(obs, eval_=True, **kwargs)
+        return {'joint_pos': actions, 'est_vel': vel, 'est_z': z}
 
     def save(self) -> Dict[str, Any]:
         """Save model state."""

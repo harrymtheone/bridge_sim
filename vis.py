@@ -10,9 +10,9 @@ import torch
 from rich.table import Table
 
 # VisPy for GPU-accelerated visualization
-import vispy
-from vispy import app, scene, color
-from vispy.scene import visuals
+# import vispy
+# from vispy import app, scene, color
+# from vispy.scene import visuals
 
 if TYPE_CHECKING:
     from bridge_env.envs import ParkourEnv

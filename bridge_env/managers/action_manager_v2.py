@@ -205,10 +205,6 @@ class ActionManagerV2(ManagerBase):
         if missing_terms:
             raise ValueError(f"Missing action terms: {missing_terms}. Expected terms: {self._term_names}, got {list(action.keys())}")
 
-        extra_terms = set(action.keys()) - set(self._term_names)
-        if extra_terms:
-            raise ValueError(f"Unknown action terms: {extra_terms}. Expected terms: {self._term_names}, got {list(action.keys())}")
-
         # store previous actions
         for term_name in self._action:
             self._prev_action[term_name][:] = self._action[term_name]
