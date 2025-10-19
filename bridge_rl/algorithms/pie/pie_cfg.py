@@ -6,50 +6,35 @@ from isaaclab.managers import ObservationTermCfg, ObservationGroupCfg
 from isaaclab.utils import configclass
 
 from bridge_env import mdp
-from bridge_rl.algorithms import UniversalProprioWithPhase, UniversalCriticObsWithPhase, PPOCfg
+from bridge_rl.algorithms import UniversalProprio, UniversalCriticObs, PPOCfg
 from . import PIE
 
 
 @configclass
 class OdomObservationCfg:
     @configclass
-    class Scan(ObservationGroupCfg):
-        scan = ObservationTermCfg(func=mdp.obs.height_scan_1d, params=MISSING)
+    class Depth(ObservationGroupCfg):
+        depth_front = ObservationTermCfg(
+            func=mdp.obs.image,
+            params=dict(sensor_cfg=MISSING, data_type="depth"),
+            # noise=GaussianNoiseCfg(mean=0., std=0.05),
+            # modifiers=  # TODO: we need gaussian filer here
+        )
 
     @configclass
     class EstGT(ObservationGroupCfg):
         vel = ObservationTermCfg(func=mdp.obs.base_lin_vel)
 
-    proprio = UniversalProprioWithPhase(
-        history_length=10,
-        flatten_history_dim=False,
+    proprio = UniversalProprio(
+        enable_corruption=True,
     )
 
-    # depth = ObservationGroupCfg(
-    #     terms={
-    #         'front': ObservationTermCfg(
-    #             func=mdp.obs.image,
-    #             params=dict(sensor_cfg=MISSING, data_type="depth"),
-    #             # noise=GaussianNoiseCfg(mean=0., std=0.05),
-    #             # modifiers=  # TODO: we need gaussian filer here
-    #         ),
-    #         'back': ObservationTermCfg(
-    #             func=mdp.obs.image,
-    #             params=dict(sensor_cfg=MISSING, data_type="depth"),
-    #             # noise=GaussianNoiseCfg(mean=0., std=0.05),
-    #             # modifiers=  # TODO: we need gaussian filer here
-    #         )
-    #     }
-    # )
-
-    scan = Scan()
+    depth = Depth()
 
     est_gt = EstGT()
 
-    critic_obs: UniversalCriticObsWithPhase = UniversalCriticObsWithPhase(
+    critic_obs: UniversalCriticObs = UniversalCriticObs(
         enable_corruption=True,
-        history_length=50,
-        flatten_history_dim=False,
     )
 
 

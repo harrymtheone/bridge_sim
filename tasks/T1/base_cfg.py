@@ -201,9 +201,9 @@ class T1SceneWithDepthCfg(T1SceneCfg):
             # vertical_aperture=0.216,
         ),
         # depth_clipping_behavior="max",
-        data_types=["rgb"],
-        width=256,
-        height=256,
+        data_types=["depth"],
+        width=64,
+        height=64,
 
         # offset=TiledCameraCfg.OffsetCfg(
         #     pos=(0.17, 0., 0.01),

@@ -46,7 +46,7 @@ def main(args):
     task_cfg.checkpoint = getattr(args, 'checkpoint', task_cfg.checkpoint)
 
     if args.debug:
-        task_cfg.env.scene.num_envs = 64
+        task_cfg.env.scene.num_envs = 16
         task_cfg.logger_backend = None
 
     runner = task_cfg.class_type(cfg=task_cfg)

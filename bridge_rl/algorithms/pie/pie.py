@@ -23,7 +23,6 @@ class PIE(PPO):
     def _init_components(self):
         # derive shapes from env
         prop_shape = self.env.observation_manager.group_obs_dim['proprio']
-        scan_shape = self.env.observation_manager.group_obs_dim['scan']
         critic_obs_shape = self.env.observation_manager.group_obs_dim['critic_obs']
         action_size = self.env.action_manager.total_action_dim
 
