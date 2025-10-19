@@ -196,6 +196,7 @@ class T1PIEFlatTaskCfg(RLTaskCfg):
     only_positive_reward_until = 500
 
     algorithm = PIECfg()
-    algorithm.observations.depth.depth_front.params["sensor_cfg"] = SceneEntityCfg("scanner")
+    algorithm.observations.depth.depth_front.params["sensor_cfg"] = SceneEntityCfg("depth_front")
+    algorithm.observations.scan.scan.params = dict(sensor_cfg=SceneEntityCfg("scanner"), offset=-0.7)
 
     max_iterations: int = 10000

@@ -20,7 +20,7 @@ class PPO:
 
         self.cfg = cfg
         self.env = env
-        self.num_envs = env.num_envs
+        self.num_envs: int = env.num_envs
         self.device = torch.device(env.device)
         self.learning_rate = self.cfg.learning_rate
 
@@ -28,12 +28,6 @@ class PPO:
         self.critic: BaseCritic | None = None
         self.optimizer_ppo = None
         self.storage: RolloutStorage | None = None
-
-        # Mixed precision training
-        self.scaler = torch.amp.GradScaler(enabled=self.cfg.use_amp)
-
-        # Common loss functions
-        self.mse_loss = torch.nn.MSELoss()
 
         # Initialize components
         self._init_components()
@@ -44,6 +38,7 @@ class PPO:
         raise NotImplementedError
 
     def act(self, observations, **kwargs) -> dict[str, torch.Tensor]:
+        raise NotImplementedError
         # Store observations
         self._store_observations(observations)
 
@@ -53,8 +48,8 @@ class PPO:
         # Generate actions
         actions = self._generate_actions(observations, **kwargs)
 
-        # Evaluate using critic
-        values = self.critic.evaluate(observations)
+        # Evaluate state value
+        values = self._evaluate_state(observations, **kwargs)
 
         # Store transition data
         self._store_transition_data(actions, values, **kwargs)
@@ -65,10 +60,12 @@ class PPO:
         self.storage.add_transitions('observations', observations)
 
     def _store_hidden_states(self):
-        if self.actor.is_recurrent:
-            self.storage.add_transitions('hidden_states', self.actor.get_hidden_states())
+        raise NotImplementedError
 
     def _generate_actions(self, obs: dict[str, torch.Tensor], **kwargs) -> torch.Tensor:
+        raise NotImplementedError
+
+    def _evaluate_state(self, obs: dict[str, torch.Tensor], **kwargs) -> torch.Tensor:
         raise NotImplementedError
 
     def _store_transition_data(self, actions, values, **kwargs):
@@ -85,7 +82,8 @@ class PPO:
         self.storage.flush()
 
     def compute_returns(self, last_observations):
-        last_values = self.critic.evaluate(last_observations)
+        last_observations = self.preproces_observations(last_observations)
+        last_values = self._evaluate_state(last_observations)
         self.storage.compute_returns(last_values, self.cfg.gamma, self.cfg.lam)
 
     def update(self, **kwargs) -> Dict[str, float]:

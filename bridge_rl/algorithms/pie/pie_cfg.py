@@ -6,12 +6,16 @@ from isaaclab.managers import ObservationTermCfg, ObservationGroupCfg
 from isaaclab.utils import configclass
 
 from bridge_env import mdp
-from bridge_rl.algorithms import UniversalProprio, UniversalCriticObs, PPOCfg
+from bridge_rl.algorithms import UniversalProprioWithPhase, UniversalCriticObsWithPhase, PPOCfg
 from . import PIE
 
 
 @configclass
 class OdomObservationCfg:
+    @configclass
+    class Scan(ObservationGroupCfg):
+        scan = ObservationTermCfg(func=mdp.obs.height_scan_1d, params=MISSING)
+
     @configclass
     class Depth(ObservationGroupCfg):
         depth_front = ObservationTermCfg(
@@ -25,17 +29,20 @@ class OdomObservationCfg:
     class EstGT(ObservationGroupCfg):
         vel = ObservationTermCfg(func=mdp.obs.base_lin_vel)
 
-    proprio = UniversalProprio(
-        enable_corruption=True,
-    )
+    proprio = UniversalProprioWithPhase(enable_corruption=True)
+
+    prop_next = UniversalProprioWithPhase(enable_corruption=False)  # see task_runner and process_env_step
+    prop_next.phase_command = None
+    prop_next.vel_command = None
+    prop_next.last_action = None
 
     depth = Depth()
 
+    scan = Scan()
+
     est_gt = EstGT()
 
-    critic_obs: UniversalCriticObs = UniversalCriticObs(
-        enable_corruption=True,
-    )
+    critic_obs = UniversalCriticObsWithPhase(enable_corruption=True)
 
 
 @configclass
@@ -44,13 +51,18 @@ class PIECfg(PPOCfg):
 
     observations = OdomObservationCfg()
 
-    # -- Actor Critic
-    actor_gru_hidden_size: int = 128
-    actor_gru_num_layers: int = 2
-    actor_hidden_dims: tuple = (512, 256, 128)
-    critic_hidden_dims: tuple = (512, 256, 128)
+    # -- Encoder
+    mixer_depth_channel: int = 1
+    mixer_hidden_size: int = 256
 
     # -- VAE
+    len_latent_z: int = 16
+    len_latent_hmap: int = 16
+    len_command: int = 5
     vae_latent_size: int = 16
     vae_loss_z_coef: float = 1.0
     vae_loss_vel_coef: float = 1.0
+
+    # -- Actor Critic
+    actor_hidden_dims: tuple = (512, 256, 128)
+    critic_hidden_dims: tuple = (512, 256, 128)

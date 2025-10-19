@@ -101,6 +101,9 @@ class RolloutStorage:
         }
 
     def register_data_buffer(self, name, data_shape: int | tuple[int, ...], dtype: torch.dtype):
+        if isinstance(data_shape, int):
+            data_shape = (data_shape,)
+
         self.storage[name] = DataBuf(self.storage_length, self.num_envs, data_shape, dtype, self.device)
 
     def register_hidden_state_buffer(self, name, num_layers: int, hidden_size: int):

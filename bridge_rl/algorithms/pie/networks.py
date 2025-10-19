@@ -4,28 +4,20 @@ import torch
 from torch import nn
 from torch.distributions import Normal
 
-from bridge_rl.algorithms import make_linear_layers, recurrent_wrapper, BaseRecurrentActor
+from bridge_rl.algorithms import make_linear_layers, recurrent_wrapper, BaseActor
 
 
-class EstimatorGRU(nn.Module):
+class Mixer(nn.Module):
     def __init__(
             self,
-            prop_shape: tuple[int, ...],
+            prop_size: tuple[int, ...],
             depth_channel: int,
             hidden_size: int,
             activation=nn.ELU(),
     ):
         super().__init__()
 
-        self.prop_his_enc = nn.Sequential(
-            nn.Conv1d(in_channels=prop_size, out_channels=32, kernel_size=4),
-            activation,
-            nn.Conv1d(in_channels=32, out_channels=64, kernel_size=4),
-            activation,
-            nn.Conv1d(in_channels=64, out_channels=128, kernel_size=4),
-            activation,
-            nn.Flatten()
-        )
+        self.prop_enc = make_linear_layers(prop_size, 64, 128, activation_func=activation)
 
         self.depth_enc = nn.Sequential(
             nn.Conv2d(in_channels=depth_channel, out_channels=32, kernel_size=5, stride=4, padding=2),
@@ -39,118 +31,86 @@ class EstimatorGRU(nn.Module):
         )
 
         self.gru = nn.GRU(input_size=256, hidden_size=hidden_size, num_layers=1)
-        self.hidden_states = None
 
-    def inference(self, prop_his, depth_his, **kwargs):
-        # inference forward
-        prop_latent = self.prop_his_enc(prop_his.transpose(1, 2))
-        depth_latent = self.depth_enc(depth_his)
+    def forward(self, prop, depth, hidden_states):
+        prop_latent = recurrent_wrapper(self.prop_enc, prop)
+        depth_latent = recurrent_wrapper(self.depth_enc, depth)
+        x = torch.cat((prop_latent, depth_latent), dim=-1)
+        return self.gru(x, hidden_states)
 
-        gru_input = torch.cat((prop_latent, depth_latent), dim=1)
-
-        # TODO: transformer here?
-        gru_out, self.hidden_states = self.gru(gru_input.unsqueeze(0), self.hidden_states)
-        return gru_out.squeeze(0)
-
-    def forward(self, prop_his, depth_his, hidden_states, **kwargs):
-        # update forward
-        prop_latent = gru_wrapper(self.prop_his_enc.forward, prop_his.transpose(2, 3))
-
-        depth_latent = gru_wrapper(self.depth_enc.forward, depth_his)
-
-        gru_input = torch.cat((prop_latent, depth_latent), dim=2)
-
-        gru_out, _ = self.gru(gru_input, hidden_states)
-        return gru_out
-
-    def get_hidden_states(self):
-        if self.hidden_states is None:
-            return None
-        return self.hidden_states.detach()
-
-    def detach_hidden_states(self):
-        if self.hidden_states is not None:
-            self.hidden_states = self.hidden_states.detach()
-
-    def reset(self, dones):
-        if self.hidden_states is not None:
-            self.hidden_states[:, dones] = 0.
+    def init_hidden_states(self, num_envs: int, device: torch.device):
+        return torch.zeros(self.gru.num_layers, num_envs, self.gru.hidden_size, dtype=torch.float, device=device)
 
 
-class PIEPolicy(BaseRecurrentActor):
-    is_recurrent = True
+class EstimatorVAE(nn.Module):
+    def __init__(
+            self,
+            input_size: int,
+            len_latent_z: int,
+            len_latent_hmap: int,
+            ot1_size: int,
+            scan_size: int,
+            activation=nn.ELU(),
+    ):
+        super().__init__()
+        self.len_latent_hmap = len_latent_hmap
+
+        self.encoder = make_linear_layers(input_size, 128, activation_func=activation)
+
+        self.mlp_vel = nn.Linear(input_size, 3)
+        self.mlp_vel_logvar = nn.Linear(input_size, 3)
+        self.mlp_z = nn.Linear(input_size, len_latent_z + len_latent_hmap)
+        self.mlp_z_logvar = nn.Linear(input_size, len_latent_z + len_latent_hmap)
+
+        self.ot1_predictor = make_linear_layers(3 + len_latent_z + len_latent_hmap, 128, ot1_size,
+                                                activation_func=activation, output_activation=False)
+
+        self.hmap_recon = make_linear_layers(len_latent_hmap, 256, scan_size,
+                                             activation_func=activation, output_activation=False)
+
+    def forward(self, mixer_out, sample=True):
+        mu_vel = self.mlp_vel(mixer_out)
+        logvar_vel = self.mlp_vel_logvar(mixer_out)
+        mu_z = self.mlp_z(mixer_out)
+        logvar_z = self.mlp_z_logvar(mixer_out)
+
+        vel = self.reparameterize(mu_vel, logvar_vel) if sample else mu_vel
+        z = self.reparameterize(mu_z, logvar_z) if sample else mu_z
+
+        ot1 = self.ot1_predictor(torch.cat([vel, z], dim=-1))
+        hmap = self.hmap_recon(z[:, :, -self.len_latent_hmap:])
+
+        return vel, z, mu_vel, logvar_vel, mu_z, logvar_z, ot1, hmap
+
+    @staticmethod
+    def reparameterize(mu: torch.Tensor, logvar: torch.Tensor) -> torch.Tensor:
+        std = torch.exp(0.5 * logvar)
+        eps = torch.randn_like(std)
+        return eps * std + mu
+
+
+class Actor(BaseActor):
+    is_recurrent = False
 
     def __init__(
             self,
-            prop_shape: tuple[int, ...],
+            prop_size: int,
+            len_latent: int,
+            actor_hidden_dims: tuple[int, ...],
             action_size: int,
             activation=nn.ELU(),
     ):
         super().__init__(action_size=action_size)
 
-        self.estimator = EstimatorGRU(prop_shape)
-
-        self.actor_gru_num_layers = actor_gru_num_layers
-
-        # Encodes height scan or alternative reconstructed scan
-        self.scan_encoder = make_linear_layers(
-            scan_size, 256, 128,
-            activation_func=activation
-        )
-
-        # Belief encoder (GRU)
-        self.gru = nn.GRU(prop_size + 128, actor_gru_hidden_size, num_layers=actor_gru_num_layers)
-
-        self.vae = VAE(
-            input_shape=(actor_gru_hidden_size,),
-            proprio_size=prop_size,
-            vae_latent_size=vae_latent_size,
-        )
-
-        # Actor MLP head
         self.actor = make_linear_layers(
-            vae_latent_size + 3 + actor_gru_hidden_size,
-            *actor_hidden_dims,
-            action_size,
+            prop_size + 3 + len_latent, *actor_hidden_dims, action_size,
             activation_func=activation,
             output_activation=False,
         )
 
-    def act(self, obs, eval_: bool = False, **kwargs):
-        proprio = obs['proprio']
-        scan = obs['scan']
+    def forward(self, x) -> torch.Tensor:
+        return self.actor(x)
 
-        scan_enc = self.scan_encoder(scan)
-        x = torch.cat([proprio, scan_enc], dim=1)
-
-        # GRU forward
-        x, self.hidden_states = self.gru(x.unsqueeze(0), self.hidden_states)
-        x = x.squeeze(0)
-
-        z, vel = self.vae(x)[:2]
-
-        mean = self.actor(torch.cat([z, vel, x], dim=1))
-
-        if eval_:
-            return mean
-
-        self.distribution = Normal(mean, torch.exp(self.log_std))
+    def sample_actions(self, x):
+        self.distribution = Normal(self.forward(x), torch.exp(self.log_std))
         return self.distribution.sample()
-
-    def train_act(self, obs, hidden_states=None, **kwargs):
-        proprio = obs['proprio']
-        scan = obs['scan']
-
-        scan_enc = recurrent_wrapper(self.scan_encoder.forward, scan.flatten(2))
-
-        x = torch.cat([proprio, scan_enc], dim=2)
-        x, _ = self.gru(x, hidden_states)
-
-        z, vel = recurrent_wrapper(self.vae, x)[:2]
-
-        mean = recurrent_wrapper(self.actor.forward, torch.cat([z, vel, x], dim=2))
-        self.distribution = Normal(mean, torch.exp(self.log_std))
-        return x
-
-    def init_hidden_states(self, num_envs, device):
-        self.hidden_states = torch.zeros(self.actor_gru_num_layers, num_envs, self.gru.hidden_size, device=device)

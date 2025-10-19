@@ -107,33 +107,13 @@ class BaseRecurrentActor(BaseActor):
         raise NotImplementedError
 
 
-class BaseCritic(nn.Module):
-    """Base template class for critics in the PPO algorithm.
-
-    This class defines the interface that all critics should implement.
-    """
-
-    def __init__(self):
-        super().__init__()
-
-    def evaluate(self, critic_obs: dict[str, torch.Tensor], **kwargs) -> torch.Tensor:
-        """Evaluate state values.
-
-        Args:
-            critic_obs: Critic observations (can be tensor or structured observation)
-            **kwargs: Additional arguments for custom critics
-
-        Returns:
-            State values tensor
-        """
-        raise NotImplementedError("Subclasses must implement evaluate method")
-
-
-class PPOCritic(BaseCritic):
-    def __init__(self,
-                 critic_obs_shape: tuple[int, int],
-                 scan_shape: tuple[int, ...],
-                 critic_hidden_dims: tuple[int, ...] = (512, 256, 128)):
+class PPOCritic(nn.Module):
+    def __init__(
+            self,
+            critic_obs_shape: tuple[int, int],
+            scan_shape: tuple[int, ...],
+            critic_hidden_dims: tuple[int, ...] = (512, 256, 128),
+    ):
         super().__init__()
 
         activation = nn.ELU()
@@ -141,7 +121,7 @@ class PPOCritic(BaseCritic):
         if len(critic_obs_shape) == 2:
             critic_obs_size = critic_obs_shape[-1]
         else:
-            raise ValueError(f'critic_obs_shape {critic_obs_shape} is not valid!')
+            raise ValueError(f'critic_obs shape {critic_obs_shape} is not valid!')
 
         # Proprioceptive history encoder
         self.priv_enc = nn.Sequential(
@@ -165,21 +145,7 @@ class PPOCritic(BaseCritic):
             output_activation=False
         )
 
-    def evaluate(self, obs: dict[str, torch.Tensor], **kwargs) -> torch.Tensor:
-        critic_obs = obs['critic_obs']
-        scan = obs['scan']
-
-        remove_seq_dim = False
-        if critic_obs.ndim == 3:
-            critic_obs = critic_obs.unsqueeze(0)
-            scan = scan.unsqueeze(0)
-            remove_seq_dim = True
-
+    def forward(self, critic_obs, scan, **kwargs) -> torch.Tensor:
         priv_latent = recurrent_wrapper(self.priv_enc, critic_obs.transpose(2, 3))
         scan_enc = self.scan_enc(scan.flatten(2))
-        value = self.critic(torch.cat([priv_latent, scan_enc], dim=-1))
-
-        if remove_seq_dim:
-            return value.squeeze(0)
-        else:
-            return value
+        return self.critic(torch.cat([priv_latent, scan_enc], dim=-1))
