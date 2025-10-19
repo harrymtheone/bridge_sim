@@ -58,7 +58,7 @@ def main(args):
 
             actions = runner.algorithm.play_act(observations)
 
-            actions = {"joint_pos": env.motion_generator.get_motion('ref_motion') - env.scene['robot'].data.default_joint_pos}
+            # actions = {"joint_pos": env.motion_generator.get_motion('ref_motion') - env.scene['robot'].data.default_joint_pos}
 
             # actions = torch.zeros_like(actions)
             # phase = self.env.command_manager.default_term.get_phase()

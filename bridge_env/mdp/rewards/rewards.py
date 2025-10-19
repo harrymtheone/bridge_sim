@@ -51,7 +51,7 @@ gait rewards.
 def track_ref_dof_pos_T1(
         env: BridgeEnv,
         motion_name: str,
-        tracking_sigma: float = 5.,
+        tracking_sigma: float = 2.,
         robot_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
 ) -> torch.Tensor:
     robot: Articulation = env.scene[robot_cfg.name]
